@@ -41,6 +41,7 @@ alejandria_magazine/
 ├── frontend/
 │   ├── Dockerfile
 │   └── index.html
+├── requirements.txt
 ├── config.yaml
 ├── infrastructure/
 ├── ARCHITECTURE.md
@@ -103,6 +104,7 @@ Existe un archivo global `config.yaml` en la raiz para gestionar parametros y ac
 Reglas:
 - El backend lo lee al iniciar.
 - Variables de entorno siguen teniendo prioridad sobre `config.yaml`.
+- El root `requirements.txt` referencia `backend/requirements.txt` para mantener un archivo de dependencias global.
 - En Docker se monta como `./config.yaml:/app/config.yaml:ro`.
 
 ### Cargar modelo local en Ollama (primera vez)
