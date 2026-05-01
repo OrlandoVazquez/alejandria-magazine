@@ -4,6 +4,7 @@ from app.core.config import settings
 from app.shared.database import init_db, close_db
 from app.modules.auth.adapters.http import router as auth_router
 from app.modules.articles.adapters.http import router as articles_router
+from app.modules.ai.adapters.http import router as ai_router
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -34,6 +35,7 @@ async def shutdown():
 # Rutas
 app.include_router(auth_router)
 app.include_router(articles_router)
+app.include_router(ai_router)
 
 # Health check
 @app.get("/health")

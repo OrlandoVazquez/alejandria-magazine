@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Alejandria Magazine - Demo Fase 1</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; line-height: 1.4; background: #fafafa; color: #111; }
+    h1 { margin: 0 0 6px; }
+    .muted { color: #666; }
+    section { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+    input, textarea, select { margin: 4px 0; padding: 8px; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; }
+    button { margin: 4px 4px 4px 0; padding: 8px 10px; border: 1px solid #ccc; background: #f4f4f4; border-radius: 6px; cursor: pointer; }
+    button.primary { background: #111; color: #fff; border-color: #111; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .stepper { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+    .chip { border: 1px solid #ccc; background: #fff; border-radius: 999px; padding: 4px 10px; font-size: 12px; }
+    .chip.active { background: #111; color: #fff; border-color: #111; }
+    .status { font-weight: 700; }
+    .status.draft { color: #8a6d3b; }
+    .status.review { color: #2f6fab; }
+    .status.published { color: #2f8f46; }
+    .status.rejected { color: #ba2d2d; }
+    .card { border: 1px solid #e3e3e3; border-radius: 8px; padding: 10px; margin-top: 8px; }
+    pre { background: #f7f7f7; border: 1px solid #ddd; padding: 12px; border-radius: 8px; white-space: pre-wrap; max-height: 280px; overflow: auto; }
+    ul { margin: 6px 0 0 18px; padding: 0; }
+  </style>
+</head>
+<body>
+  <h1>Alejandria Magazine - Fase 1</h1>
+  <p class="muted">Replica del flujo de la demo: login -> dashboard -> fuentes RAG -> editor -> envio -> revision -> publicado.</p>
+
+  <div class="stepper" id="stepper"></div>
+
+  <section>
+    <h2>1) Login / Registro</h2>
+    <div class="grid-2">
+      <div>
+        <h3>Registro (author)</h3>
+        <input id="register-name" value="Ana Garcia" placeholder="Nombre completo" />
+        <input id="register-email" value="ana.garcia@universidad.edu" placeholder="Email" />
+        <input id="register-password" value="12345678" placeholder="Password" type="password" />
+        <button onclick="registerUser()">Registrar</button>
+      </div>
+      <div>
+        <h3>Login</h3>
+        <input id="login-email" value="ana.garcia@universidad.edu" placeholder="Email" />
+        <input id="login-password" value="12345678" placeholder="Password" type="password" />
+        <button class="primary" onclick="loginUser()">Iniciar sesion</button>
+        <hr />
+        <h3>Reviewer (real)</h3>
+        <input id="reviewer-name" value="Miguel Ruiz" placeholder="Nombre reviewer" />
+        <input id="reviewer-email" value="miguel.ruiz@universidad.edu" placeholder="Email reviewer" />
+        <input id="reviewer-password" value="12345678" placeholder="Password reviewer" type="password" />
+        <button onclick="registerReviewer()">Registrar reviewer</button>
+        <button onclick="loginReviewer()">Login reviewer</button>
+        <button onclick="promoteCurrentToReviewer()">Promover sesion actual a reviewer (DEBUG)</button>
+        <div class="card">
+          <div><strong>Usuario actual:</strong> <span id="me-email">-</span></div>
+          <div><strong>Rol:</strong> <span id="me-role">-</span></div>
+          <div><strong>Sesion activa:</strong> <span id="session-role">-</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>2) Dashboard</h2>
+    <button onclick="loadMyArticles()">Listar mis articulos</button>
+    <button onclick="openDraftFromFirst()">Abrir primer borrador</button>
+    <div class="card">
+      <strong>Articulos:</strong>
+      <ul id="article-list"></ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>3) Fuentes RAG</h2>
+    <input id="rag-source-id" value="source-demo-1" placeholder="Source ID" />
+    <textarea id="rag-text" rows="4">Los LLMs mejoran la retencion de conceptos cuando el feedback es adaptativo.</textarea>
+    <button onclick="ingestRag()">Indexar en Qdrant</button>
+    <div class="grid-2">
+      <div>
+        <label for="model-select">Modelo local (Ollama)</label>
+        <select id="model-select"></select>
+      </div>
+      <div>
+        <label>&nbsp;</label>
+        <button onclick="loadOllamaModels()">Cargar modelos locales</button>
+      </div>
+    </div>
+    <input id="rag-query" value="Que impacto tienen los LLMs en educacion?" placeholder="Consulta RAG" />
+    <button onclick="assistRag()">Consultar asistente</button>
+    <button onclick="applyLastRagSuggestion()">Anadir sugerencia al articulo</button>
+    <div class="card"><strong>Fuentes recuperadas:</strong><ul id="rag-contexts"></ul></div>
+  </section>
+
+  <section>
+    <h2>4) Editor</h2>
+    <input id="article-title" value="Impacto de los LLMs en la Educacion Superior" placeholder="Titulo" />
+    <textarea id="article-body" rows="6">Los modelos de lenguaje estan transformando la educacion universitaria.</textarea>
+    <div>
+      <select id="format-select">
+        <option value="none">Sin formato</option>
+        <option value="apa">APA 7</option>
+        <option value="ieee">IEEE</option>
+        <option value="vancouver">Vancouver</option>
+      </select>
+    </div>
+    <button onclick="createArticle()">Crear borrador</button>
+    <button onclick="saveDraft()">Guardar borrador</button>
+    <button class="primary" onclick="submitArticle()">Enviar a revision</button>
+    <div class="card">
+      <div><strong>ID actual:</strong> <span id="article-id">-</span></div>
+      <div><strong>Estado actual:</strong> <span id="article-status" class="status draft">draft</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>5) Revision y publicacion</h2>
+    <p class="muted">Aprobar/rechazar usa backend real y requiere token reviewer.</p>
+    <textarea id="reject-comment" rows="2" placeholder="Comentario de rechazo (opcional)">Falta ampliar referencias metodologicas.</textarea>
+    <button onclick="approveArticle()">Aprobar y publicar</button>
+    <button onclick="rejectArticle()">Rechazar</button>
+    <div class="card" id="published-card" style="display:none">
+      <strong>Publicado:</strong>
+      <div id="published-url"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Salida</h2>
+    <pre id="output">Listo para ejecutar demo fase 1...</pre>
+  </section>
+
+  <script>
+    const API_BASE = "http://localhost:8000";
+    const STEPS = ["Login", "Dashboard", "Fuentes RAG", "Editor", "Envio", "Revision", "Publicado"];
+    let currentStep = 1;
+    let accessToken = "";
+    let authorToken = "";
+    let reviewerToken = "";
+    let currentUser = null;
+    let currentArticle = null;
+    let myArticles = [];
+    let lastAssist = null;
+
+    function setStep(n) {
+      currentStep = n;
+      const html = STEPS.map((label, i) => {
+        const step = i + 1;
+        return `<span class="chip ${step <= n ? "active" : ""}">${step}. ${label}</span>`;
+      }).join("");
+      document.getElementById("stepper").innerHTML = html;
+    }
+
+    function setOutput(data) {
+      const text = typeof data === "string" ? data : JSON.stringify(data, null, 2);
+      document.getElementById("output").textContent = text;
+    }
+
+    function setArticleStatus(status) {
+      const el = document.getElementById("article-status");
+      el.textContent = status;
+      el.className = "status " + (
+        status === "published" ? "published" :
+        status === "in_review" ? "review" :
+        status === "rejected" ? "rejected" : "draft"
+      );
+    }
+
+    async function callApi(path, method, body, useAuth = false, tokenOverride = "") {
+      const headers = { "Content-Type": "application/json" };
+      const token = tokenOverride || accessToken;
+      if (useAuth && token) headers.Authorization = `Bearer ${token}`;
+      const response = await fetch(`${API_BASE}${path}`, {
+        method, headers, body: body ? JSON.stringify(body) : undefined
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(`${response.status} ${response.statusText}: ${JSON.stringify(data)}`);
+      return data;
+    }
+
+    function renderArticles() {
+      const list = document.getElementById("article-list");
+      if (!myArticles.length) {
+        list.innerHTML = "<li>Sin articulos todavia</li>";
+        return;
+      }
+      list.innerHTML = myArticles.map((a) => (
+        `<li><strong>${a.title}</strong> - <span class="status ${a.status === "published" ? "published" : a.status === "in_review" ? "review" : a.status === "rejected" ? "rejected" : "draft"}">${a.status}</span></li>`
+      )).join("");
+    }
+
+    async function registerUser() {
+      try {
+        const payload = {
+          full_name: document.getElementById("register-name").value,
+          email: document.getElementById("register-email").value,
+          password: document.getElementById("register-password").value
+        };
+        const data = await callApi("/api/v1/auth/register", "POST", payload);
+        setOutput({ step: "register", data });
+      } catch (error) { setOutput(error.message); }
+    }
+
+    async function loginUser() {
+      try {
+        const payload = {
+          email: document.getElementById("login-email").value,
+          password: document.getElementById("login-password").value
+        };
+        const data = await callApi("/api/v1/auth/login", "POST", payload);
+        accessToken = data.access_token;
+        authorToken = data.access_token;
+        currentUser = await callApi("/api/v1/auth/me", "GET", null, true);
+        document.getElementById("me-email").textContent = currentUser.email;
+        document.getElementById("me-role").textContent = currentUser.role;
+        document.getElementById("session-role").textContent = "author";
+        setStep(1);
+        await loadMyArticles();
+        setOutput({ step: "login", currentUser });
+      } catch (error) { setOutput(error.message); }
+    }
+
+    async function registerReviewer() {
+      try {
+        const payload = {
+          full_name: document.getElementById("reviewer-name").value,
+          email: document.getElementById("reviewer-email").value,
+          password: document.getElementById("reviewer-password").value
+        };
+        const data = await callApi("/api/v1/auth/register", "POST", payload);
+        accessToken = data.access_token;
+        reviewerToken = data.access_token;
+        await promoteCurrentToReviewer();
+      } catch (error) { setOutput(error.message); }
+    }
+
+    async function loginReviewer() {
+      try {
+        const payload = {
+          email: document.getElementById("reviewer-email").value,
+          password: document.getElementById("reviewer-password").value
+        };
+        const data = await callApi("/api/v1/auth/login", "POST", payload);
+        reviewerToken = data.access_token;
+        accessToken = reviewerToken;
+        currentUser = await callApi("/api/v1/auth/me", "GET", null, true, reviewerToken);
+        document.getElementById("me-email").textContent = currentUser.email;
+        document.getElementById("me-role").textContent = currentUser.role;
+        document.getElementById("session-role").textContent = "reviewer";
+        setOutput({ step: "login_reviewer", currentUser });
+      } catch (error) { setOutput(error.message); }
+    }
+
+    async function promoteCurrentToReviewer() {
+      try {
+        const data = await callApi("/api/v1/auth/dev/promote-reviewer", "POST", null, true);
+        document.getElementById("me-email").textContent = data.email;
+        document.getElementById("me-role").textContent = data.role;
+        setOutput({ step: "promote_reviewer", data });
+      } catch (error) { setOutput(error.message); }
+    }
+
+    async function loadMyArticles() {
+      try {
+        const data = await callApi("/api/v1/articles", "GET", null, true);
+        myArticles = data.items || [];
+        renderArticles();
+        setStep(2);
+        setOutput({ step: "dashboard_list", total: myArticles.length });
+      } catch (error) { setOutput(error.message); }
+    }
+
+    function openDraftFromFirst() {
+      const first = myArticles.find((item) => item.status === "draft") || myArticles[0];
+      if (!first) return setOutput("No hay articulos para abrir");
+      currentArticle = first;
+      document.getElementById("article-id").textContent = currentArticle.id;
+      document.getElementById("article-title").value = currentArticle.title;
+      document.getElementById("article-body").value = currentArticle.body;
+      document.getElementById("format-select").value = currentArticle.scientific_format || "none";
+      setArticleStatus(currentArticle.status);
+      setStep(4);
+      setOutput({ step: "open_editor", article_id: currentArticle.id });
+    }
+
+    async function ingestRag() {
+      try {
+        const payload = {
+          source_id: document.getElementById("rag-source-id").value,
+          text: document.getElementById("rag-text").value
+        };
+        const data = await callApi("/api/v1/ai/ingest", "POST", payload, false);
+        setStep(3);
+        setOutput({ step: "rag_ingest", data });
+      } catch (error) { setOutput(error.message); }
+    }
+
+    async function assistRag() {
+      try {
+        const selectedModel = document.getElementById("model-select").value;
+        const payload = { query: document.getElementById("rag-query").value, top_k: 3, model: selectedModel || null };
+        const data = await callApi("/api/v1/ai/assist", "POST", payload, false);
+        lastAssist = data;
+        const contexts = document.getElementById("rag-contexts");
+        contexts.innerHTML = (data.contexts || []).map((c) => `<li>${c}</li>`).join("") || "<li>Sin resultados</li>";
+        setStep(3);
+        setOutput({ step: "rag_assist", data });
+      } catch (error) { setOutput(error.message); }
+    }
+
+    async function loadOllamaModels() {
+      try {
+        const data = await callApi("/api/v1/ai/models", "GET", null, false);
+        const select = document.getElementById("model-select");
+        const models = data.models || [];
+        if (!models.length) {
+          select.innerHTML = "<option value=''>Sin modelos locales</option>";
+          return setOutput({ step: "models", message: "No hay modelos en Ollama. Ejecuta: ollama pull llama3.2" });
+        }
+        select.innerHTML = models.map((m) => `<option value="${m}">${m}</option>`).join("");
+        setOutput({ step: "models", models });
+      } catch (error) { setOutput(error.message); }
+    }
+
+    function applyLastRagSuggestion() {
+      if (!lastAssist || !lastAssist.contexts || !lastAssist.contexts.length) {
+        return setOutput("Primero ejecuta assist para obtener contexto.");
+      }
+      const current = document.getElementById("article-body").value;
+      const suggested = "\n\nContexto sugerido por RAG:\n- " + lastAssist.contexts.join("\n- ");
+      document.getElementById("article-body").value = current + suggested;
+      setStep(4);
+      setOutput({ step: "apply_rag_to_editor" });
+    }
+
+    async function createArticle() {
+      try {
+        const payload = {
+          title: document.getElementById("article-title").value,
+          body: document.getElementById("article-body").value
+        };
+        const data = await callApi("/api/v1/articles", "POST", payload, true);
+        currentArticle = data;
+        document.getElementById("article-id").textContent = data.id;
+        setArticleStatus(data.status);
+        setStep(4);
+        await loadMyArticles();
+        setOutput({ step: "create_article", data });
+      } catch (error) { setOutput(error.message); }
+    }
+
+    async function saveDraft() {
+      try {
+        if (!currentArticle) throw new Error("Primero crea u abre un articulo.");
+        const payload = {
+          title: document.getElementById("article-title").value,
+          body: document.getElementById("article-body").value,
+          scientific_format: document.getElementById("format-select").value
+        };
+        const data = await callApi(`/api/v1/articles/${currentArticle.id}`, "PUT", payload, true);
+        currentArticle = data;
+        setArticleStatus(data.status);
+        setStep(4);
+        await loadMyArticles();
+        setOutput({ step: "save_draft", data });
+      } catch (error) { setOutput(error.message); }
+    }
+
+    async function submitArticle() {
+      try {
+        if (!currentArticle) throw new Error("Primero crea u abre un articulo.");
+        const data = await callApi(`/api/v1/articles/${currentArticle.id}/submit`, "POST", null, true);
+        currentArticle = data;
+        setArticleStatus(data.status);
+        setStep(5);
+        await loadMyArticles();
+        setOutput({ step: "submit_for_review", data });
+      } catch (error) { setOutput(error.message); }
+    }
+
+    function buildPublishedUrl(title) {
+      const slug = (title || "articulo").toLowerCase().replace(/[^a-z0-9\s-]/g, "").trim().replace(/\s+/g, "-");
+      return `https://platform.local/articulos/${slug}`;
+    }
+
+    async function approveArticle() {
+      try {
+        if (!currentArticle) throw new Error("No hay articulo activo.");
+        if (!reviewerToken) throw new Error("Primero inicia sesion como reviewer.");
+        const data = await callApi(`/api/v1/articles/${currentArticle.id}/approve`, "POST", null, true, reviewerToken);
+        currentArticle = data;
+        setArticleStatus("published");
+        document.getElementById("published-url").textContent = buildPublishedUrl(currentArticle.title);
+        document.getElementById("published-card").style.display = "block";
+        setStep(7);
+        setOutput({ step: "approve_publish", data });
+      } catch (error) { setOutput(error.message); }
+    }
+
+    async function rejectArticle() {
+      try {
+        if (!currentArticle) throw new Error("No hay articulo activo.");
+        if (!reviewerToken) throw new Error("Primero inicia sesion como reviewer.");
+        const comment = document.getElementById("reject-comment").value;
+        const data = await callApi(`/api/v1/articles/${currentArticle.id}/reject`, "POST", { comment }, true, reviewerToken);
+        currentArticle = data;
+        setArticleStatus("rejected");
+        document.getElementById("published-card").style.display = "none";
+        setStep(6);
+        setOutput({ step: "reject", data });
+      } catch (error) { setOutput(error.message); }
+    }
+
+    loadOllamaModels();
+    setStep(1);
+  </script>
+</body>
+</html>

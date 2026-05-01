@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.shared.database import get_session
 from app.modules.auth.application.dtos import RegisterDTO, LoginDTO, TokenResponse, UserResponse
 from app.modules.auth.application.use_cases import RegisterUseCase, LoginUseCase, GetUserUseCase
 from app.modules.auth.adapters.repository import UserRepositoryImpl
+from app.modules.auth.domain.entities import UserRole
 from app.core.security import verify_token
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
@@ -47,23 +49,51 @@ async def login(
 
 @router.get("/me", response_model=UserResponse)
 async def get_me(
-    authorization: str = None,
+    authorization: str | None = Header(default=None, alias="Authorization"),
     session: AsyncSession = Depends(get_session)
 ):
     """Obtener información del usuario autenticado."""
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="No autorizado")
-    
-    token = authorization.replace("Bearer ", "")
-    token_data = verify_token(token)
-    
-    if not token_data:
-        raise HTTPException(status_code=401, detail="Token inválido")
-    
+    token_data = _get_token_data(authorization)
+
     try:
         repo = UserRepositoryImpl(session)
         use_case = GetUserUseCase(repo)
         user = await use_case.execute(token_data.user_id)
         return UserResponse.from_orm(user)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+def _get_token_data(authorization: str | None):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="No autorizado")
+
+    token = authorization.replace("Bearer ", "")
+    token_data = verify_token(token)
+
+    if not token_data:
+        raise HTTPException(status_code=401, detail="Token inválido")
+
+    return token_data
+
+
+@router.post("/dev/promote-reviewer", response_model=UserResponse)
+async def promote_to_reviewer(
+    authorization: str | None = Header(default=None, alias="Authorization"),
+    session: AsyncSession = Depends(get_session)
+):
+    """Promover el usuario autenticado al rol reviewer (solo DEBUG)."""
+    if not settings.ENABLE_DEV_ROLE_PROMOTION:
+        raise HTTPException(status_code=403, detail="Promocion de rol deshabilitada por configuracion")
+
+    token_data = _get_token_data(authorization)
+
+    try:
+        repo = UserRepositoryImpl(session)
+        use_case = GetUserUseCase(repo)
+        user = await use_case.execute(token_data.user_id)
+        user.role = UserRole.REVIEWER
+        updated = await repo.update(user)
+        return UserResponse.from_orm(updated)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))

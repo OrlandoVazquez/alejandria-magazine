@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 
@@ -23,7 +23,9 @@ from app.core.security import verify_token
 router = APIRouter(prefix="/api/v1/articles", tags=["articles"])
 
 
-def get_current_user(authorization: str = None):
+def get_current_user(
+    authorization: str | None = Header(default=None, alias="Authorization"),
+):
     """Dependency para obtener el usuario actual."""
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="No autorizado")
@@ -35,6 +37,23 @@ def get_current_user(authorization: str = None):
         raise HTTPException(status_code=401, detail="Token inválido")
     
     return token_data
+
+
+@router.get("", response_model=ArticleListResponse)
+async def list_my_articles(
+    token_data=Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """Listar artículos del usuario autenticado."""
+    repo = ArticleRepositoryImpl(session)
+    items = await repo.get_by_author(UUID(token_data.user_id), skip=0, limit=100)
+    return {
+        "items": [ArticleResponse.model_validate(article) for article in items],
+        "total": len(items),
+        "page": 1,
+        "size": len(items),
+        "pages": 1
+    }
 
 
 @router.post("", response_model=ArticleResponse, status_code=201)

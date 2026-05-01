@@ -1,123 +1,89 @@
-# Backend — Arquitectura Hexagonal
+# Backend - Arquitectura simplificada
 
-## Estructura del proyecto
+Este backend mantiene una arquitectura modular (domain/application/adapters), pero con un alcance reducido para levantar rapido en Docker Compose y ejecutar el flujo principal de articulos.
+
+## Estructura actual
 
 ```
 backend/
 ├── app/
-│   ├── __init__.py
-│   ├── main.py                    # FastAPI app factory
+│   ├── main.py
 │   ├── core/
-│   │   ├── config.py              # Configuración (pydantic-settings)
-│   │   └── security.py            # JWT, hashing, tokens
+│   │   ├── config.py
+│   │   └── security.py
 │   ├── shared/
-│   │   └── database.py            # SQLAlchemy async, migrations
+│   │   └── database.py
 │   └── modules/
 │       ├── auth/
-│       │   ├── domain/            # Entidades (User, UserRole)
-│       │   ├── application/       # Use cases, DTOs, Ports
-│       │   └── adapters/          # HTTP (routers), Persistence (ORM + Repo)
-│       ├── articles/
-│       │   ├── domain/            # Entidades (Article, ArticleStatus)
-│       │   ├── application/       # Use cases, DTOs, Ports
-│       │   └── adapters/          # HTTP (routers), Persistence (ORM + Repo)
-│       └── ai/                    # (Por implementar)
-├── alembic/
-│   ├── env.py                     # Configuración de migraciones
-│   ├── script.py.mako             # Template para migraciones
-│   └── versions/                  # Migraciones generadas
-├── requirements.txt               # Dependencias Python
-├── Dockerfile                     # Imagen Docker
-├── .env.example                   # Variables de entorno
-├── .gitignore                     # Archivos ignorados por Git
-└── README.md                      # Este archivo
+│       │   ├── domain/
+│       │   ├── application/
+│       │   └── adapters/
+│       └── articles/
+│           ├── domain/
+│           ├── application/
+│           └── adapters/
+├── requirements.txt
+├── Dockerfile
+└── .env.example
 ```
 
-## Principios de arquitectura
-
-### 1. **Hexagonal (Ports & Adapters)**
-
-La dependencia siempre va desde afuera hacia adentro:
-
-```
-Adaptadores (HTTP, BD) → Application → Domain
-```
-
-- **Domain**: Lógica pura, sin dependencias externas
-- **Application**: Use cases, DTOs, Ports (interfaces)
-- **Adapters**: Implementaciones concretas (FastAPI, SQLAlchemy)
-
-### 2. **Por módulo**
-
-Cada módulo (Auth, Articles, AI) es independiente y autosuficiente:
-- Su propia lógica de dominio
-- Sus propios casos de uso
-- Sus propias interfaces (ports)
-- Sus propias implementaciones (adapters)
-
-### 3. **Inyección de dependencias**
-
-Los repositorios se inyectan en los casos de uso, no se importan directamente. Ejemplo:
-
-```python
-class LoginUseCase:
-    def __init__(self, user_repository: IUserRepository):
-        self.user_repository = user_repository  # Inyectado
-```
-
-## Endpoints básicos (Fase 1)
+## Endpoints necesarios para el flujo
 
 ### Auth
-- `POST /api/v1/auth/register` → Registrar usuario
-- `POST /api/v1/auth/login` → Login (tokens JWT)
-- `GET /api/v1/auth/me` → Info del usuario autenticado
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/login`
+- `GET /api/v1/auth/me`
+- `POST /api/v1/auth/dev/promote-reviewer` (solo DEBUG, para demo end-to-end)
 
 ### Articles
-- `POST /api/v1/articles` → Crear artículo (draft)
-- `GET /api/v1/articles/{id}` → Obtener artículo
-- `PUT /api/v1/articles/{id}` → Actualizar borrador
-- `POST /api/v1/articles/{id}/submit` → Enviar a revisión
-- `POST /api/v1/articles/{id}/approve` → Aprobar (reviewer)
-- `POST /api/v1/articles/{id}/reject` → Rechazar con comentario
+- `GET /api/v1/articles` (lista articulos del autor autenticado)
+- `POST /api/v1/articles` (crear borrador)
+- `GET /api/v1/articles/{id}`
+- `PUT /api/v1/articles/{id}`
+- `POST /api/v1/articles/{id}/submit`
+- `POST /api/v1/articles/{id}/approve`
+- `POST /api/v1/articles/{id}/reject`
 
 ### Health
-- `GET /health` → Estado del sistema
+- `GET /health`
 
-## Instalación y desarrollo
+### AI (RAG minimo con Qdrant)
+- `POST /api/v1/ai/ingest`
+- `POST /api/v1/ai/assist`
+- `GET /api/v1/ai/models` (modelos locales Ollama)
+
+## Ejecutar en local (sin Docker)
 
 ```bash
-# 1. Variables de entorno
-cp .env.example .env
-
-# 2. Crear virtual env
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-
-# 3. Instalar dependencias
+cd backend
+python -m venv .venv
+.venv\Scripts\activate
 pip install -r requirements.txt
-
-# 4. Crear BD (solo para development local)
-# Usa alembic o crea las tablas automáticamente al iniciar
-
-# 5. Ejecutar servidor
 uvicorn app.main:app --reload --port 8000
 ```
 
-## Uso con Docker
+## Ejecutar con Docker Compose
+
+Desde la raiz del proyecto:
 
 ```bash
-# Desde el root del proyecto
-docker compose up
-
-# La API estará en http://localhost/api/v1
-# Docs en http://localhost/docs
+docker compose up --build
 ```
 
-## Próximos pasos (Fase 2)
+## Configuracion global
 
-- [ ] Módulo AI (WritingAssistantAgent, RAGIngest)
-- [ ] Integración con Ollama y Qdrant
-- [ ] Celery tasks para ingesta asíncrona
-- [ ] Generación de portadas
-- [ ] Exportación a PDF/DOCX
-- [ ] Tests unitarios e integración
+El backend carga configuracion desde `config.yaml` (archivo en la raiz del repo).
+
+En Docker, ese archivo se monta en:
+- `/app/config.yaml`
+
+Prioridad de configuracion:
+1. Variables de entorno (`ENV`)
+2. `config.yaml`
+3. Defaults en `app/core/config.py`
+
+Servicios disponibles:
+- API FastAPI: `http://localhost:8000`
+- Docs OpenAPI: `http://localhost:8000/docs`
+- Frontend HTML simple: `http://localhost:8080`
+- Ollama local: `http://localhost:11434`
