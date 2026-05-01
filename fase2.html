@@ -1,0 +1,1946 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Article Platform — Fase 2</title>
+<style>
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   BASE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f1117;--surface:#1a1d27;--surface2:#22263a;--border:#2e3350;
+  --accent:#6c63ff;--accent2:#a78bfa;--green:#22c55e;--yellow:#facc15;
+  --red:#f87171;--text:#e2e8f0;--muted:#64748b;--r:10px;
+  --font:'Segoe UI',system-ui,sans-serif;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.6;overflow:hidden}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   MODO PRESENTACIÓN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#presentation{
+  position:fixed;inset:0;overflow:hidden;
+  transition:opacity .5s ease,transform .5s ease;
+}
+#presentation.hide{opacity:0;transform:scale(1.03);pointer-events:none}
+
+/* Slides */
+.slides-viewport{position:relative;width:100%;height:100vh;overflow:hidden}
+.slide{
+  position:absolute;inset:0;overflow-y:auto;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:52px 40px 40px;
+  opacity:0;transform:translateY(36px);pointer-events:none;
+  transition:opacity .4s ease,transform .4s ease;
+}
+.slide.active{opacity:1;transform:translateY(0);pointer-events:all}
+.slide.out-up{opacity:0;transform:translateY(-36px)}
+
+/* Nav bar */
+#pres-nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  background:rgba(15,17,23,.85);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  height:48px;display:flex;align-items:center;padding:0 20px;gap:16px;
+}
+.pres-nav-dots{display:flex;gap:6px;margin:0 auto}
+.pndot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--border);cursor:pointer;
+  transition:background .2s,transform .2s;border:none;padding:0;
+}
+.pndot.active{background:var(--accent2);transform:scale(1.3)}
+.pndot.done{background:var(--green)}
+.pres-logo{font-size:.82rem;font-weight:700;color:var(--text);white-space:nowrap}
+.pres-counter{font-size:.75rem;color:var(--muted);white-space:nowrap}
+.pres-arrows{display:flex;gap:6px}
+.parrow{
+  background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+  padding:4px 10px;font-size:.82rem;color:var(--muted);cursor:pointer;
+  transition:background .15s,color .15s;font-family:var(--font);
+}
+.parrow:hover{background:var(--surface);color:var(--text)}
+
+/* ── Shared slide components ─────────────────────────────────────── */
+.section-header{text-align:center;margin-bottom:40px}
+.step-num{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:36px;height:36px;border-radius:50%;
+  background:var(--accent);color:#fff;font-weight:700;font-size:.9rem;margin-bottom:10px;
+}
+.section-title{font-size:clamp(1.5rem,4vw,2.4rem);font-weight:700;line-height:1.2}
+.section-title span{color:var(--accent2)}
+.section-desc{color:var(--muted);font-size:.92rem;max-width:540px;margin:8px auto 0}
+.divider{width:44px;height:3px;background:var(--accent);border-radius:999px;margin:16px auto}
+
+/* ── Hero ──────────────────────────────────────────────────────── */
+#s-hero{background:radial-gradient(ellipse at 50% 0%,#1e1b4b 0%,var(--bg) 70%);text-align:center;gap:20px}
+.hero-badge{
+  display:inline-block;background:rgba(108,99,255,.15);
+  border:1px solid rgba(108,99,255,.4);color:var(--accent2);
+  font-size:.75rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  padding:5px 16px;border-radius:999px;
+}
+.hero-title{
+  font-size:clamp(2.2rem,6vw,4rem);font-weight:800;line-height:1.1;
+  background:linear-gradient(135deg,#fff 30%,var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hero-sub{font-size:1.05rem;color:var(--muted);max-width:540px}
+.tag-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:8px}
+.tag{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 12px;font-size:.78rem;color:var(--accent2);font-weight:500}
+
+/* ── Flow diagram ──────────────────────────────────────────────── */
+.flow-outer{width:100%;overflow-x:auto;display:flex;justify-content:center;padding-bottom:4px}
+.flow{display:flex;align-items:center;flex-wrap:nowrap;justify-content:center}
+.flow-step{display:flex;flex-direction:column;align-items:center;gap:7px;min-width:90px;text-align:center}
+.flow-icon{
+  width:54px;height:54px;border-radius:50%;
+  background:var(--surface2);border:2px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-size:1.35rem;
+  transition:border-color .3s,box-shadow .3s,background .3s;
+}
+.flow-icon.on{border-color:var(--accent);background:rgba(108,99,255,.2);box-shadow:0 0 18px rgba(108,99,255,.35)}
+.flow-label{font-size:.72rem;font-weight:500;color:var(--muted)}
+.flow-label.on{color:var(--accent2)}
+.flow-arrow{font-size:1.1rem;color:var(--border);margin:0 4px;padding-bottom:18px}
+
+/* ── Cards ─────────────────────────────────────────────────────── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:22px}
+.card-grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;width:100%;max-width:860px}
+.card-icon{font-size:1.8rem;margin-bottom:10px}
+.card h3{font-size:.95rem;font-weight:600;margin-bottom:6px}
+.card p{font-size:.82rem;color:var(--muted)}
+
+/* ── Browser mockup ─────────────────────────────────────────────── */
+.browser{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  overflow:hidden;width:100%;max-width:740px;box-shadow:0 20px 50px rgba(0,0,0,.4);
+}
+.browser-bar{background:var(--surface2);padding:9px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.b-dots{display:flex;gap:5px}
+.b-dots span{width:10px;height:10px;border-radius:50%}
+.b-dots .dr{background:#ff5f57}.b-dots .dy{background:#ffbd2e}.b-dots .dg{background:#28c840}
+.b-url{flex:1;background:var(--bg);border-radius:5px;padding:4px 10px;font-size:.76rem;color:var(--muted);font-family:monospace}
+.b-body{padding:22px}
+
+/* Login mockup */
+.mock-login{max-width:300px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.mock-logo{text-align:center;font-size:1.3rem;font-weight:800;background:linear-gradient(135deg,#fff 30%,var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:4px}
+.mock-field{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-size:.82rem;color:var(--text)}
+.mock-btn-p{background:var(--accent);color:#fff;border-radius:7px;padding:10px;text-align:center;font-weight:600;font-size:.85rem}
+.mock-btn-g{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:10px;text-align:center;font-size:.82rem}
+
+/* Dashboard mockup */
+.dash-lay{display:grid;grid-template-columns:160px 1fr;min-height:310px}
+.dash-side{background:var(--surface2);border-right:1px solid var(--border);padding:16px 10px;display:flex;flex-direction:column;gap:4px}
+.dash-main-m{padding:16px;display:flex;flex-direction:column;gap:12px}
+.drow{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:10px 14px;display:flex;align-items:center;gap:10px;font-size:.82rem}
+.drow-t{flex:1;font-weight:500}
+.badge-s{padding:3px 9px;border-radius:999px;font-size:.7rem;font-weight:600}
+.bd{background:rgba(100,116,139,.2);color:#94a3b8}
+.br{background:rgba(250,204,21,.15);color:var(--yellow)}
+.bp{background:rgba(108,99,255,.2);color:var(--accent2)}
+.snav{padding:7px 10px;border-radius:7px;font-size:.8rem;color:var(--muted);display:flex;align-items:center;gap:6px}
+.snav.on{background:rgba(108,99,255,.2);color:var(--accent2);font-weight:600}
+
+/* Editor mockup */
+.ed-lay{display:grid;grid-template-columns:1fr 240px;min-height:330px}
+.ed-area{padding:16px;display:flex;flex-direction:column;gap:10px;border-right:1px solid var(--border)}
+.ed-tb{display:flex;gap:5px;flex-wrap:wrap}
+.etb{padding:4px 9px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:.73rem;font-weight:500}
+.etb.hl{background:rgba(108,99,255,.2);border-color:var(--accent);color:var(--accent2)}
+.ed-content{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:12px;font-size:.8rem;line-height:1.75}
+.ai-p{padding:12px;display:flex;flex-direction:column;gap:8px;background:linear-gradient(180deg,var(--surface) 0%,#1a1628 100%)}
+.ai-pt{font-size:.78rem;font-weight:700;color:var(--accent2);display:flex;align-items:center;gap:5px}
+.ai-bub{border-radius:7px;padding:9px 10px;font-size:.75rem;line-height:1.6}
+.ai-u{background:var(--surface2);border:1px solid var(--border);color:var(--muted)}
+.ai-b{background:rgba(108,99,255,.08);border:1px solid rgba(108,99,255,.25);color:var(--text)}
+.ai-src-s{font-size:.68rem;color:var(--accent2);margin-top:4px}
+
+/* RAG grid */
+.rag-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:14px;width:100%;max-width:860px}
+.rag-n{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 14px;text-align:center}
+.rag-n.center{border-color:var(--accent);background:rgba(108,99,255,.07)}
+.rag-ni{font-size:1.6rem;margin-bottom:7px}
+.rag-n h4{font-size:.84rem;font-weight:600;margin-bottom:3px}
+.rag-n p{font-size:.74rem;color:var(--muted)}
+
+/* Format comparison */
+.fmt-comp{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:740px}
+.fcp{display:flex;flex-direction:column;gap:6px}
+.fcl{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em}
+.fcl.b{color:var(--muted)}.fcl.a{color:var(--green)}
+.fct{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:10px;font-size:.75rem;line-height:1.7;height:160px;overflow-y:auto;color:var(--muted)}
+.fct.a{border-color:rgba(34,197,94,.3);color:var(--text)}
+
+/* Review mockup */
+.rev-grid{display:grid;grid-template-columns:1fr 260px;gap:16px;width:100%;max-width:860px}
+.rev-paper{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:10px}
+.rev-actions-m{display:flex;flex-direction:column;gap:10px}
+.rev-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:10px}
+.av{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.75rem;color:#fff;flex-shrink:0}
+.app-btn{background:var(--green);color:#111;border-radius:7px;padding:10px;text-align:center;font-weight:600;font-size:.84rem}
+.rej-btn{border:1.5px solid var(--red);color:var(--red);border-radius:7px;padding:10px;text-align:center;font-weight:600;font-size:.84rem}
+
+/* Published mockup */
+.pub-art{width:100%;max-width:600px;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.pub-cov{width:100%;height:170px;background:linear-gradient(135deg,#1e1b4b 0%,#312e81 40%,#4c1d95 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;position:relative;overflow:hidden}
+.pub-cov::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 30% 60%,rgba(108,99,255,.4) 0%,transparent 60%)}
+.pub-ct{font-size:1.15rem;font-weight:800;text-align:center;padding:0 20px;position:relative;z-index:1;line-height:1.3}
+.pub-cm{font-size:.72rem;color:rgba(255,255,255,.55);position:relative;z-index:1}
+.pub-bd{padding:18px;font-size:.82rem;line-height:1.7;color:#cbd5e1}
+.pub-ft{border-top:1px solid var(--border);padding:10px 18px;display:flex;align-items:center;justify-content:space-between;font-size:.74rem;color:var(--muted)}
+
+/* Timeline */
+.timeline{display:flex;flex-direction:column;gap:0;max-width:620px;width:100%}
+.tl-item{display:grid;grid-template-columns:36px 1fr;gap:14px;position:relative}
+.tl-line{position:absolute;left:17px;top:36px;bottom:-10px;width:2px;background:var(--border)}
+.tl-dot{width:36px;height:36px;border-radius:50%;background:var(--surface2);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:.88rem;flex-shrink:0;z-index:1}
+.tl-c{padding-bottom:24px}
+.tl-t{font-weight:600;font-size:.88rem;margin-bottom:3px}
+.tl-d{font-size:.78rem;color:var(--muted)}
+.tl-role{display:inline-block;font-size:.66rem;font-weight:600;padding:2px 7px;border-radius:999px;margin-left:6px;vertical-align:middle}
+.ra{background:rgba(108,99,255,.2);color:var(--accent2)}
+.rv{background:rgba(34,197,94,.15);color:var(--green)}
+.rs{background:rgba(250,204,21,.15);color:var(--yellow)}
+
+/* CTA demo */
+.cta-demo-box{text-align:center;margin-top:40px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.cta-demo-btn{
+  background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;
+  border:none;border-radius:12px;padding:16px 36px;font-size:1.05rem;font-weight:700;
+  font-family:var(--font);cursor:pointer;
+  box-shadow:0 0 30px rgba(108,99,255,.4);
+  transition:transform .2s,box-shadow .2s;
+  display:inline-flex;align-items:center;gap:10px;
+}
+.cta-demo-btn:hover{transform:translateY(-3px);box-shadow:0 0 44px rgba(108,99,255,.6)}
+
+/* Nav guidance */
+#slide-hint{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
+  font-size:.72rem;color:var(--muted);pointer-events:none;z-index:90;
+  background:rgba(15,17,23,.7);backdrop-filter:blur(6px);
+  border:1px solid var(--border);padding:5px 14px;border-radius:999px;
+  transition:opacity .3s;white-space:nowrap}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   MODO DEMO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+#demo{
+  position:fixed;inset:0;overflow:hidden;
+  opacity:0;pointer-events:none;
+  transition:opacity .5s ease;
+}
+#demo.show{opacity:1;pointer-events:all}
+
+.screen{
+  position:absolute;inset:0;overflow-y:auto;
+  opacity:0;transform:translateX(28px);pointer-events:none;
+  transition:opacity .32s ease,transform .32s ease;
+}
+.screen.active{opacity:1;transform:translateX(0);pointer-events:all}
+.screen.exit{opacity:0;transform:translateX(-28px)}
+
+/* Stepper */
+#stepper{
+  position:absolute;top:0;left:0;right:0;z-index:200;
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:0 12px;height:52px;display:flex;align-items:center;gap:0;
+  overflow-x:auto;scrollbar-width:none;
+}
+#stepper::-webkit-scrollbar{display:none}
+#stepper.hidden{display:none}
+.stp{display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:6px;white-space:nowrap;font-size:.74rem;font-weight:500;color:var(--muted);transition:color .2s,background .2s;flex-shrink:0}
+.stp.done{color:var(--green)}
+.stp.active{background:rgba(108,99,255,.18);color:var(--accent2);font-weight:700}
+.stp-arrow{color:var(--border);font-size:.75rem;flex-shrink:0}
+
+/* Toasts */
+#toasts{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 18px;font-size:.83rem;opacity:0;transform:translateY(8px);animation:toastIn .3s ease forwards,toastOut .3s ease 2.7s forwards;pointer-events:none;max-width:340px;line-height:1.4}
+.toast.ok{border-left:3px solid var(--green);color:var(--green)}
+.toast.info{border-left:3px solid var(--accent);color:var(--accent2)}
+.toast.warn{border-left:3px solid var(--yellow);color:var(--yellow)}
+@keyframes toastIn{to{opacity:1;transform:translateY(0)}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+
+/* Buttons */
+.btn{border:none;cursor:pointer;border-radius:8px;padding:10px 20px;font-size:.9rem;font-weight:600;font-family:var(--font);transition:opacity .18s,transform .12s;display:inline-flex;align-items:center;gap:8px}
+.btn:hover{opacity:.88;transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-green{background:var(--green);color:#111}
+.btn-red{background:transparent;border:1.5px solid var(--red);color:var(--red)}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
+.btn-sm{padding:7px 14px;font-size:.8rem}
+.btn-xs{padding:5px 10px;font-size:.75px}
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Inputs */
+input,textarea{background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--font);font-size:.9rem;padding:10px 14px;outline:none;width:100%;transition:border-color .2s}
+input:focus,textarea:focus{border-color:var(--accent)}
+textarea{resize:none}
+label{font-size:.8rem;color:var(--muted);font-weight:500;display:block;margin-bottom:4px}
+.dcrd{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:22px}
+
+/* Overlay */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;pointer-events:none;transition:opacity .25s}
+.overlay.show{opacity:1;pointer-events:all}
+.modal-box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:26px;width:100%;max-width:680px;transform:scale(.96);transition:transform .25s}
+.overlay.show .modal-box{transform:scale(1)}
+.modal-title{font-size:1.05rem;font-weight:700;margin-bottom:14px}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+.badge{padding:3px 10px;border-radius:999px;font-size:.72rem;font-weight:600;white-space:nowrap}
+.badge-draft{background:rgba(100,116,139,.2);color:#94a3b8}
+.badge-review{background:rgba(250,204,21,.15);color:var(--yellow)}
+.badge-published{background:rgba(108,99,255,.2);color:var(--accent2)}
+.cursor{display:inline-block;width:2px;height:1em;background:var(--accent2);animation:blink .7s step-end infinite;vertical-align:text-bottom;margin-left:1px}
+@keyframes blink{50%{opacity:0}}
+
+/* ── Demo screens ────────────────────────────────────────────────── */
+/* Login */
+#d-login{display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 0%,#1e1b4b 0%,var(--bg) 70%)}
+.login-wrap{width:100%;max-width:370px}
+.login-logo{text-align:center;font-size:1.5rem;font-weight:800;margin-bottom:24px;background:linear-gradient(135deg,#fff 30%,var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.login-card{display:flex;flex-direction:column;gap:12px}
+.field{display:flex;flex-direction:column;gap:4px}
+.role-btns{display:flex;gap:10px}
+.role-btn{flex:1;padding:10px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface2);color:var(--muted);font-size:.8rem;font-weight:600;cursor:pointer;text-align:center;transition:border-color .2s,color .2s,background .2s;font-family:var(--font)}
+.role-btn:hover{border-color:var(--accent);color:var(--accent2);background:rgba(108,99,255,.1)}
+.role-btn.selected{border-color:var(--accent);color:var(--accent2);background:rgba(108,99,255,.15)}
+
+/* Dashboard */
+#d-dashboard{padding-top:52px}
+.app-wrap{display:grid;grid-template-columns:196px 1fr;min-height:calc(100vh - 52px)}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:18px 10px;display:flex;flex-direction:column;gap:4px}
+.sidebar-logo{font-weight:800;font-size:.88rem;padding:6px 10px 14px}
+.nav-item{padding:8px 11px;border-radius:7px;font-size:.82rem;color:var(--muted);display:flex;align-items:center;gap:7px;cursor:pointer;transition:background .15s,color .15s}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:rgba(108,99,255,.2);color:var(--accent2);font-weight:600}
+.main-pad{padding:26px 30px;max-width:880px}
+.dash-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.dash-header h1{font-size:1.2rem;font-weight:700}
+.avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.78rem;color:#fff;flex-shrink:0}
+.article-row{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;display:flex;align-items:center;gap:12px;margin-bottom:9px;cursor:pointer;transition:border-color .2s,background .15s}
+.article-row:hover{border-color:var(--accent);background:rgba(108,99,255,.05)}
+.article-row.disabled{cursor:default;opacity:.65}
+.article-row.disabled:hover{border-color:var(--border);background:var(--surface)}
+.article-title{flex:1;font-weight:500;font-size:.88rem}
+.article-meta{font-size:.72rem;color:var(--muted)}
+
+/* Editor */
+#d-editor{padding-top:52px}
+.editor-wrap{display:grid;grid-template-columns:1fr 294px;height:calc(100vh - 52px)}
+.editor-col{display:flex;flex-direction:column;border-right:1px solid var(--border)}
+.editor-topbar{padding:10px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--surface)}
+.breadcrumb{font-size:.76rem;color:var(--muted)}.breadcrumb span{color:var(--accent2)}
+.tb{display:flex;gap:4px;padding:7px 18px;border-bottom:1px solid var(--border);background:var(--surface2);flex-wrap:wrap}
+.tb-btn{padding:5px 9px;border-radius:5px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:.76rem;font-weight:600;cursor:pointer;font-family:var(--font);transition:background .15s,color .15s}
+.tb-btn:hover{background:var(--surface2);color:var(--text)}
+.tb-btn.hl{background:rgba(108,99,255,.2);border-color:var(--accent);color:var(--accent2)}
+#article-title-input{border:none;background:transparent;font-size:1.15rem;font-weight:700;color:var(--text);padding:14px 18px 6px;border-radius:0;width:100%}
+#article-title-input:focus{outline:none;box-shadow:none;border:none}
+#article-body-input{flex:1;border:none;border-radius:0;background:transparent;color:var(--text);font-size:.88rem;line-height:1.8;padding:10px 18px;resize:none}
+#article-body-input:focus{outline:none;box-shadow:none;border:none}
+.editor-footer{padding:10px 18px;border-top:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.format-tags{display:flex;gap:5px;margin-right:auto;flex-wrap:wrap}
+.fmt-active{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:var(--green);border-radius:6px;padding:3px 9px;font-size:.71rem;font-weight:600}
+.ai-col{display:flex;flex-direction:column;overflow:hidden}
+.ai-header{padding:12px 14px;border-bottom:1px solid var(--border);font-size:.8rem;font-weight:700;color:var(--accent2);display:flex;align-items:center;gap:5px}
+.ai-chat{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:7px}
+.ai-msg{border-radius:7px;padding:9px 10px;font-size:.78rem;line-height:1.6}
+.ai-msg.user{background:var(--surface2);border:1px solid var(--border);color:var(--muted)}
+.ai-msg.bot{background:rgba(108,99,255,.08);border:1px solid rgba(108,99,255,.25);color:var(--text)}
+.ai-sources{margin-top:6px;display:flex;flex-direction:column;gap:2px}
+.ai-source{font-size:.7rem;color:var(--accent2)}
+.ai-thinking{display:flex;gap:4px;padding:5px 0}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--accent2);animation:bounce .9s infinite}
+.dot:nth-child(2){animation-delay:.15s}.dot:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
+@keyframes pulseBtn{0%,100%{box-shadow:0 0 0 0 rgba(108,99,255,.7)}50%{box-shadow:0 0 0 8px rgba(108,99,255,0)}}
+.pulse-once{animation:pulseBtn .6s ease 2}
+.ai-format-section{padding:9px 10px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.ai-format-label{font-size:.7rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+.fmt-btns{display:flex;gap:5px}
+.fmt-btn{flex:1;padding:6px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-size:.74rem;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s;text-align:center}
+.fmt-btn:hover{border-color:var(--accent);color:var(--accent2);background:rgba(108,99,255,.12)}
+.ai-input-area{padding:9px 10px;display:flex;flex-direction:column;gap:5px}
+#ai-textarea{height:56px;font-size:.78rem;padding:7px 9px}
+
+/* Submitted */
+#d-submitted{display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 30%,#1a2e1a 0%,var(--bg) 70%);padding:40px 24px}
+.submitted-card{text-align:center;max-width:440px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.submitted-icon{font-size:3.5rem;animation:popIn .5s cubic-bezier(.175,.885,.32,1.275)}
+@keyframes popIn{0%{transform:scale(0)}100%{transform:scale(1)}}
+.submitted-card h2{font-size:1.6rem;font-weight:800}
+.submitted-card p{color:var(--muted);font-size:.88rem;line-height:1.7}
+.reviewer-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;display:flex;align-items:center;gap:12px;width:100%;margin-top:4px}
+
+/* Review */
+#d-review{padding-top:52px}
+.review-wrap{display:grid;grid-template-columns:1fr 300px;max-width:1060px;margin:0 auto;gap:20px;padding:24px;height:calc(100vh - 52px)}
+.review-paper{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow-y:auto;padding:24px}
+.paper-title{font-size:1.15rem;font-weight:700;line-height:1.3;margin-bottom:8px}
+.paper-meta{font-size:.75rem;color:var(--muted);margin-bottom:14px;line-height:1.7}
+.paper-body{font-size:.84rem;line-height:1.85;color:#cbd5e1}
+.paper-body p{margin-bottom:10px}
+.review-actions{display:flex;flex-direction:column;gap:12px;position:sticky;top:24px;height:fit-content}
+.reviewer-profile{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;display:flex;gap:10px;align-items:center}
+.action-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:10px}
+.action-card h3{font-size:.86rem;font-weight:600;color:var(--muted)}
+.reject-area{display:none;flex-direction:column;gap:7px}
+.reject-area.show{display:flex}
+#reject-comment{height:72px}
+
+/* Published */
+#d-published{display:flex;align-items:flex-start;justify-content:center;padding:24px;background:radial-gradient(ellipse at 50% 0%,#1e1b4b 0%,var(--bg) 80%);min-height:100vh;padding-top:60px}
+.pub-wrapper{width:100%;max-width:680px;display:flex;flex-direction:column;gap:14px}
+.pub-success-bar{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:var(--r);padding:12px 16px;display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--green);font-weight:600}
+.pub-article{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.pub-cover{width:100%;height:200px;background:linear-gradient(135deg,#1e1b4b 0%,#312e81 40%,#4c1d95 100%);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;position:relative;overflow:hidden}
+.pub-cover::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 30% 60%,rgba(108,99,255,.45) 0%,transparent 60%)}
+.pub-cover-title{font-size:1.35rem;font-weight:800;text-align:center;padding:0 24px;position:relative;z-index:1;line-height:1.3}
+.pub-cover-meta{font-size:.73rem;color:rgba(255,255,255,.55);position:relative;z-index:1}
+.pub-body{padding:24px;font-size:.85rem;line-height:1.85}
+.pub-body h2{font-size:1rem;font-weight:700;margin:14px 0 5px}
+.pub-body p{color:#cbd5e1;margin-bottom:9px}
+.pub-footer{border-top:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;font-size:.75rem;color:var(--muted)}
+
+/* Comparison in modal */
+.comparison{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}
+.cmp-panel{}
+.cmp-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+.cmp-label.before{color:var(--muted)}.cmp-label.after{color:var(--green)}
+.cmp-text{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:10px;font-size:.76rem;line-height:1.7;height:180px;overflow-y:auto;white-space:pre-wrap;color:var(--muted)}
+.cmp-text.after{border-color:rgba(34,197,94,.3);color:var(--text)}
+
+/* pub URL */
+.pub-url{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:.76rem;color:var(--muted);display:flex;align-items:center;gap:7px}
+.pub-url code{color:var(--accent2)}
+
+@media(max-width:680px){
+  .app-wrap,.editor-wrap,.review-wrap{grid-template-columns:1fr}
+  .sidebar,.ai-col{display:none}
+  .fmt-comp,.comparison{grid-template-columns:1fr}
+  .rev-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     PRESENTACIÓN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<div id="presentation">
+
+  <!-- Nav -->
+  <nav id="pres-nav" aria-label="Navegación de la presentación">
+    <span class="pres-logo">✦ AI Article Platform</span>
+    <div class="pres-nav-dots" id="pres-dots" role="tablist" aria-label="Diapositivas"></div>
+    <span class="pres-counter" id="pres-counter">1 / 9</span>
+    <div class="pres-arrows">
+      <button class="parrow" id="btn-prev" aria-label="Diapositiva anterior">←</button>
+      <button class="parrow" id="btn-next" aria-label="Diapositiva siguiente">→</button>
+    </div>
+  </nav>
+  <div id="slide-hint" aria-hidden="true">Scroll o ← → para navegar entre diapositivas</div>
+
+  <div class="slides-viewport" id="slides-viewport">
+
+    <!-- ── SLIDE 0: Hero ─────────────────────────────────────────────── -->
+    <section class="slide active" id="s-hero" aria-label="Portada Fase 2">
+      <span class="hero-badge">Fase 2 · Orquestación Multi-Agente</span>
+      <h1 class="hero-title">Enjambre de agentes<br>trabajando juntos</h1>
+      <p class="hero-sub">Del redactor solitario al equipo de agentes IA coordinados. Redacción, revisión, investigación y publicación automática en un solo flujo.</p>
+      <div class="tag-row">
+        <span class="tag">LangGraph</span><span class="tag">Contexto compartido</span>
+        <span class="tag">Agente Redactor</span><span class="tag">Agente Revisor</span>
+        <span class="tag">Agente Investigador</span><span class="tag">Publicación agentica</span>
+      </div>
+    </section>
+
+    <!-- ── SLIDE 1: De Fase 1 a Fase 2 ──────────────────────────────── -->
+    <section class="slide" id="s-evolucion" aria-label="Evolución a Fase 2">
+      <div class="section-header">
+        <h2 class="section-title">De <span>un agente</span> a un <span>enjambre</span></h2>
+        <p class="section-desc">Fase 1 introdujo el asistente IA. Fase 2 orquesta múltiples agentes especializados con contexto compartido entre todos.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;width:100%;max-width:800px">
+        <div class="card" style="border-color:var(--muted)">
+          <div class="card-icon">🤖</div>
+          <h3 style="color:var(--muted)">Fase 1 — Un asistente</h3>
+          <p>El autor redacta y consulta al asistente IA cuando quiere. Flujo lineal: redactar → revisar → publicar.</p>
+        </div>
+        <div class="card" style="border-color:var(--accent)">
+          <div class="card-icon">🧠</div>
+          <h3>Fase 2 — Enjambre coordinado</h3>
+          <p>El usuario configura y lanza un equipo de agentes especializados. Cada uno tiene un rol, herramientas y acceso al contexto compartido.</p>
+        </div>
+      </div>
+      <div class="flow-outer" style="margin-top:24px">
+        <div class="flow">
+          <div class="flow-step"><div class="flow-icon on">🧑‍💻</div><span class="flow-label on">Usuario</span></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-icon on">🎭</div><span class="flow-label on">Orquestador</span></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-icon on">🧠</div><span class="flow-label on">Redactor</span></div>
+          <div class="flow-arrow">+</div>
+          <div class="flow-step"><div class="flow-icon on">🔍</div><span class="flow-label on">Revisor</span></div>
+          <div class="flow-arrow">+</div>
+          <div class="flow-step"><div class="flow-icon on">🔬</div><span class="flow-label on">Investigador</span></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-icon on">👤</div><span class="flow-label on">Humano</span></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><div class="flow-icon on">🌐</div><span class="flow-label on">Publicado</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SLIDE 2: Los Agentes ───────────────────────────────────────── -->
+    <section class="slide" id="s-agentes" aria-label="Los agentes disponibles">
+      <div class="section-header">
+        <div class="step-num">1</div>
+        <h2 class="section-title">Los <span>agentes disponibles</span></h2>
+        <p class="section-desc">Cada agente está especializado en una tarea. El usuario los selecciona y configura desde el Agent Builder.</p>
+      </div>
+      <div class="card-grid-3" style="max-width:960px">
+        <div class="card">
+          <div class="card-icon">🧠</div>
+          <h3>Agente Redactor</h3>
+          <p>Genera y mejora contenido usando el LLM local. Recibe instrucciones del usuario y el contexto compartido del estado.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🔍</div>
+          <h3>Agente Revisor</h3>
+          <p>Verifica ortografía, gramática, coherencia y detecta errores de formato científico automáticamente.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">🔬</div>
+          <h3>Agente Investigador</h3>
+          <p>Busca y recupera referencias relevantes desde Qdrant (RAG) y fuentes externas mediante Tavily.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">📋</div>
+          <h3>Agente Formateador</h3>
+          <p>Aplica formato APA, IEEE o Vancouver al documento completo con un solo comando.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">✨</div>
+          <h3>Agente Publicador</h3>
+          <p>Genera metadatos, portada y publica el artículo automáticamente tras la aprobación humana.</p>
+        </div>
+        <div class="card" style="border-color:var(--accent)">
+          <div class="card-icon">🎭</div>
+          <h3>Orquestador (LangGraph)</h3>
+          <p>Coordina el orden, gestiona el estado compartido y resuelve dependencias entre agentes con grafo de estados.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SLIDE 3: Contexto Compartido ──────────────────────────────── -->
+    <section class="slide" id="s-contexto" aria-label="Contexto compartido">
+      <div class="section-header">
+        <div class="step-num">2</div>
+        <h2 class="section-title">Contexto <span>compartido entre agentes</span></h2>
+        <p class="section-desc">Todos los agentes leen y escriben en el mismo estado. Ningún agente trabaja con información desactualizada.</p>
+      </div>
+      <div class="browser" role="img" aria-label="Shared context state">
+        <div class="browser-bar"><div class="b-dots"><span class="dr"></span><span class="dy"></span><span class="dg"></span></div><div class="b-url">LangGraph SharedState → Redis + PostgreSQL</div></div>
+        <div class="b-body" style="font-family:monospace;font-size:.8rem;line-height:1.9;color:var(--muted)">
+          <span style="color:var(--accent2)">state = {</span><br>
+          &nbsp;&nbsp;<span style="color:var(--green)">"title"</span>: <span style="color:var(--yellow)">"Impacto de los LLMs en la Educación Superior"</span>,<br>
+          &nbsp;&nbsp;<span style="color:var(--green)">"body"</span>: <span style="color:var(--yellow)">"Los modelos de lenguaje..."</span>,<br>
+          &nbsp;&nbsp;<span style="color:var(--green)">"format"</span>: <span style="color:var(--yellow)">"APA 7ª"</span>,<br>
+          &nbsp;&nbsp;<span style="color:var(--green)">"references"</span>: [<span style="color:var(--text)">"Fernández et al. 2024", "Smith 2023"</span>],<br>
+          &nbsp;&nbsp;<span style="color:var(--green)">"agent_log"</span>: [<span style="color:var(--text)">"Redactor: añadió párrafo 2", "Revisor: 3 correcciones"</span>],<br>
+          &nbsp;&nbsp;<span style="color:var(--green)">"status"</span>: <span style="color:var(--yellow)">"pending_human_review"</span><br>
+          <span style="color:var(--accent2)">}</span>
+        </div>
+      </div>
+      <div class="card-grid-3" style="margin-top:18px">
+        <div class="card"><div class="card-icon">📖</div><h3>Lectura universal</h3><p>Cada agente lee el estado antes de actuar. Nunca trabajan sobre texto obsoleto.</p></div>
+        <div class="card"><div class="card-icon">✏️</div><h3>Escritura atómica</h3><p>Los cambios se aplican de forma atómica con historial de versiones para rollback.</p></div>
+        <div class="card"><div class="card-icon">📜</div><h3>Log completo</h3><p>Cada acción queda registrada: quién la hizo, cuándo, qué cambió exactamente.</p></div>
+      </div>
+    </section>
+
+    <!-- ── SLIDE 4: LangGraph Orquestador ────────────────────────────── -->
+    <section class="slide" id="s-langgraph" aria-label="LangGraph como orquestador">
+      <div class="section-header">
+        <div class="step-num">3</div>
+        <h2 class="section-title"><span>LangGraph</span> — el orquestador</h2>
+        <p class="section-desc">Un grafo de estados dirige la ejecución. Cada nodo es un agente; las aristas definen las transiciones y condiciones.</p>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:0;flex-wrap:wrap;width:100%;max-width:920px;row-gap:16px">
+        <div class="flow-step"><div class="flow-icon on" style="border-color:var(--green)">📝</div><span class="flow-label on">Entrada</span></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="flow-icon on">🎭</div><span class="flow-label on">Orquestador</span></div>
+        <div class="flow-arrow">→</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+          <div style="display:flex;gap:8px">
+            <div class="flow-step" style="min-width:70px"><div class="flow-icon on" style="width:44px;height:44px;font-size:1.1rem">🧠</div><span class="flow-label on" style="font-size:.66rem">Redactor</span></div>
+            <div class="flow-step" style="min-width:70px"><div class="flow-icon on" style="width:44px;height:44px;font-size:1.1rem">🔍</div><span class="flow-label on" style="font-size:.66rem">Revisor</span></div>
+            <div class="flow-step" style="min-width:70px"><div class="flow-icon on" style="width:44px;height:44px;font-size:1.1rem">🔬</div><span class="flow-label on" style="font-size:.66rem">Investigador</span></div>
+          </div>
+          <span style="font-size:.66rem;color:var(--muted)">— paralelo —</span>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="flow-icon on">👤</div><span class="flow-label on">Revisión<br>humana</span></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="flow-icon on">✨</div><span class="flow-label on">Publicador</span></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="flow-icon on" style="border-color:var(--green)">🌐</div><span class="flow-label on">Publicado</span></div>
+      </div>
+      <div class="card-grid-3" style="margin-top:22px">
+        <div class="card"><div class="card-icon">🔀</div><h3>Ejecución paralela</h3><p>Redactor, Revisor e Investigador corren simultáneamente. El orquestador espera a todos antes de continuar.</p></div>
+        <div class="card"><div class="card-icon">🔄</div><h3>Feedback loop</h3><p>Si el humano rechaza, el grafo vuelve a los agentes con el comentario de rechazo como nuevo input.</p></div>
+        <div class="card"><div class="card-icon">🛡️</div><h3>Guardrails</h3><p>Límites de tokens, rate limiting y rollback automático ante fallos. Ningún agente puede publicar sin aprobación humana.</p></div>
+      </div>
+    </section>
+
+    <!-- ── SLIDE 5: Agent Builder ─────────────────────────────────────── -->
+    <section class="slide" id="s-builder" aria-label="Agent Builder vista demo">
+      <div class="section-header">
+        <div class="step-num">4</div>
+        <h2 class="section-title">Agent Builder <span>en el dashboard</span></h2>
+        <p class="section-desc">El usuario elige qué agentes activar y con qué LLM antes de lanzar el enjambre.</p>
+      </div>
+      <div class="browser" role="img" aria-label="Agent Builder mockup">
+        <div class="browser-bar"><div class="b-dots"><span class="dr"></span><span class="dy"></span><span class="dg"></span></div><div class="b-url">https://platform.local/dashboard → 🤖 Agentes</div></div>
+        <div class="b-body" style="padding:0">
+          <div class="dash-lay">
+            <div class="dash-side">
+              <div style="font-weight:700;font-size:.82rem;color:var(--text);padding:6px 8px 12px">✦ Platform v2</div>
+              <div class="snav">📄 Mis artículos</div>
+              <div class="snav on">🤖 Agentes</div>
+              <div class="snav">📁 Fuentes RAG</div>
+            </div>
+            <div class="dash-main-m">
+              <div style="font-weight:600;font-size:.85rem;margin-bottom:10px">Configura tu enjambre</div>
+              <div class="drow"><span style="flex:1">🧠 Agente Redactor</span><span style="font-size:.72rem;color:var(--muted)">llama3.2</span><span style="background:rgba(34,197,94,.15);color:var(--green);border-radius:6px;padding:2px 9px;font-size:.71rem;font-weight:600;margin-left:8px">● Activo</span></div>
+              <div class="drow"><span style="flex:1">🔍 Agente Revisor</span><span style="font-size:.72rem;color:var(--muted)">llama3.2</span><span style="background:rgba(34,197,94,.15);color:var(--green);border-radius:6px;padding:2px 9px;font-size:.71rem;font-weight:600;margin-left:8px">● Activo</span></div>
+              <div class="drow"><span style="flex:1">🔬 Agente Investigador</span><span style="font-size:.72rem;color:var(--muted)">llama3.2</span><span style="background:rgba(34,197,94,.15);color:var(--green);border-radius:6px;padding:2px 9px;font-size:.71rem;font-weight:600;margin-left:8px">● Activo</span></div>
+              <div class="drow"><span style="flex:1">📋 Formateador</span><span style="font-size:.72rem;color:var(--muted)">—</span><span style="background:rgba(100,116,139,.2);color:var(--muted);border-radius:6px;padding:2px 9px;font-size:.71rem;font-weight:600;margin-left:8px">○ Inactivo</span></div>
+              <div style="margin-top:10px"><div style="background:var(--green);color:#111;border-radius:8px;padding:9px;font-size:.82rem;font-weight:700;text-align:center">⚡ Ejecutar enjambre</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SLIDE 6: Ejecución en tiempo real ─────────────────────────── -->
+    <section class="slide" id="s-ejecucion" aria-label="Ejecución del enjambre en tiempo real">
+      <div class="section-header">
+        <div class="step-num">5</div>
+        <h2 class="section-title">Ejecución <span>en tiempo real</span></h2>
+        <p class="section-desc">Al pulsar "⚡ Ejecutar enjambre" los agentes corren en paralelo. El usuario ve el progreso de cada uno.</p>
+      </div>
+      <div style="width:100%;max-width:760px;display:flex;flex-direction:column;gap:10px">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;display:flex;align-items:center;gap:12px">
+          <div style="font-size:1.4rem">🧠</div>
+          <div style="flex:1"><div style="font-weight:600;font-size:.85rem">Agente Redactor</div><div style="font-size:.75rem;color:var(--muted)">Mejorando párrafos 2, 3 y 4…</div></div>
+          <div style="width:90px;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden"><div style="width:70%;height:100%;background:var(--accent);border-radius:3px;transition:width .5s"></div></div>
+          <span style="font-size:.72rem;color:var(--accent2);min-width:28px">70%</span>
+        </div>
+        <div style="background:var(--surface);border:1px solid rgba(34,197,94,.4);border-radius:var(--r);padding:14px 18px;display:flex;align-items:center;gap:12px">
+          <div style="font-size:1.4rem">🔍</div>
+          <div style="flex:1"><div style="font-weight:600;font-size:.85rem">Agente Revisor</div><div style="font-size:.75rem;color:var(--green)">4 correcciones detectadas ✓</div></div>
+          <div style="width:90px;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden"><div style="width:100%;height:100%;background:var(--green);border-radius:3px"></div></div>
+          <span style="font-size:.72rem;color:var(--green);min-width:28px">✓</span>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;display:flex;align-items:center;gap:12px">
+          <div style="font-size:1.4rem">🔬</div>
+          <div style="flex:1"><div style="font-weight:600;font-size:.85rem">Agente Investigador</div><div style="font-size:.75rem;color:var(--muted)">Buscando referencias en Qdrant…</div></div>
+          <div style="width:90px;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden"><div style="width:40%;height:100%;background:var(--yellow);border-radius:3px"></div></div>
+          <span style="font-size:.72rem;color:var(--yellow);min-width:28px">40%</span>
+        </div>
+      </div>
+      <p style="color:var(--muted);font-size:.8rem;margin-top:16px;text-align:center">El orquestador espera a los 3 agentes antes de pasar a revisión humana.</p>
+    </section>
+
+    <!-- ── SLIDE 7: Revisión humana ───────────────────────────────────── -->
+    <section class="slide" id="s-revision" aria-label="Revisión y publicación agentica">
+      <div class="section-header">
+        <div class="step-num">6 · 7</div>
+        <h2 class="section-title">Revisión humana y <span>publicación agentica</span></h2>
+        <p class="section-desc">El humano aprueba el resultado del enjambre. Al aprobar, el Agente Publicador actúa automáticamente.</p>
+      </div>
+      <div class="rev-grid">
+        <div class="rev-paper">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+            <span class="badge badge-review">resultado del enjambre</span>
+            <span style="font-size:.74rem;color:var(--muted)">3 agentes completados</span>
+          </div>
+          <div style="font-weight:700;font-size:1rem;margin-bottom:8px">Impacto de los LLMs en la Educación Superior</div>
+          <div style="font-size:.8rem;color:var(--muted);line-height:1.7">Texto mejorado por Redactor · revisado por Revisor · referencias ampliadas por Investigador. Listo para publicar.</div>
+          <div style="display:flex;gap:7px;margin-top:8px"><span class="tag">APA 7ª</span><span class="tag">4 200 palabras</span><span class="tag">7 referencias</span><span class="tag">3 agentes</span></div>
+        </div>
+        <div class="rev-actions-m">
+          <div class="rev-card">
+            <div style="display:flex;gap:10px;align-items:center">
+              <div class="av">MR</div>
+              <div><strong style="font-size:.86rem">Dr. Miguel Ruiz</strong><br><small style="color:var(--muted);font-size:.73rem">Revisor asignado</small></div>
+            </div>
+            <div class="app-btn">✓ Aprobar → Agente Publicador</div>
+            <div class="rej-btn">✕ Rechazar → feedback al enjambre</div>
+          </div>
+          <div style="font-size:.72rem;color:var(--muted);line-height:1.6;padding:9px;background:var(--surface2);border-radius:7px;border:1px solid var(--border)">
+            ℹ️ Si se rechaza, el comentario vuelve al orquestador y los agentes re-ejecutan con feedback incluido.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SLIDE 8: Resumen + CTA ─────────────────────────────────────── -->
+    <section class="slide" id="s-summary" aria-label="Resumen Fase 2">
+      <div class="section-header" style="margin-bottom:20px">
+        <h2 class="section-title">Resumen del <span>flujo Fase 2</span></h2>
+        <p class="section-desc">Todos los pasos, con el agente o rol responsable de cada uno.</p>
+      </div>
+      <div class="cta-demo-box" style="margin-top:0;margin-bottom:28px">
+        <button class="cta-demo-btn" id="btn-start-demo" aria-label="Iniciar la demo interactiva de Fase 2">
+          ▶ Iniciar Demo Interactiva
+        </button>
+        <p style="font-size:.72rem;color:var(--muted)">Login · dashboard · configurar agentes · redactar · lanzar enjambre · revisar · publicar</p>
+      </div>
+      <div class="timeline" role="list">
+        <div class="tl-item" role="listitem"><div class="tl-line"></div><div class="tl-dot">🔐</div><div class="tl-c"><div class="tl-t">Login <span class="tl-role ra">author</span></div><div class="tl-d">Autenticación JWT. Rol author cargado.</div></div></div>
+        <div class="tl-item" role="listitem"><div class="tl-line"></div><div class="tl-dot">🤖</div><div class="tl-c"><div class="tl-t">Configurar agentes <span class="tl-role ra">author</span></div><div class="tl-d">Activar Redactor, Revisor, Investigador desde el Agent Builder en el dashboard.</div></div></div>
+        <div class="tl-item" role="listitem"><div class="tl-line"></div><div class="tl-dot">✍️</div><div class="tl-c"><div class="tl-t">Redactar borrador <span class="tl-role ra">author</span></div><div class="tl-d">Editor con asistente IA + botón verde "⚡ Ejecutar enjambre".</div></div></div>
+        <div class="tl-item" role="listitem"><div class="tl-line"></div><div class="tl-dot">⚡</div><div class="tl-c"><div class="tl-t">Ejecución del enjambre <span class="tl-role rs">agentes</span></div><div class="tl-d">LangGraph orquesta agentes en paralelo sobre el estado compartido.</div></div></div>
+        <div class="tl-item" role="listitem"><div class="tl-line"></div><div class="tl-dot">✅</div><div class="tl-c"><div class="tl-t">Revisión humana <span class="tl-role rv">reviewer</span></div><div class="tl-d">Aprueba o rechaza. Si rechaza, los agentes vuelven a ejecutar con el feedback.</div></div></div>
+        <div class="tl-item" role="listitem"><div class="tl-dot">🌐</div><div class="tl-c"><div class="tl-t">Publicación agentica <span class="tl-role rs">Agente Publicador</span></div><div class="tl-d">Portada generada · metadatos · <span style="color:var(--green)">status: published</span></div></div></div>
+      </div>
+    </section>
+
+  </div><!-- /slides-viewport -->
+
+</div><!-- /presentation -->
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     DEMO INTERACTIVA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<div id="demo">
+  <div id="toasts" aria-live="polite"></div>
+
+  <!-- Stepper -->
+  <nav id="stepper" class="hidden" aria-label="Progreso del flujo Fase 2">
+    <div class="stp" data-s="1">🔐 Login</div><div class="stp-arrow">›</div>
+    <div class="stp" data-s="2">🗂 Dashboard</div><div class="stp-arrow">›</div>
+    <div class="stp" data-s="3">🤖 Agentes</div><div class="stp-arrow">›</div>
+    <div class="stp" data-s="4">✍️ Redactar</div><div class="stp-arrow">›</div>
+    <div class="stp" data-s="5">⚡ Enjambre</div><div class="stp-arrow">›</div>
+    <div class="stp" data-s="6">✅ Revisión</div><div class="stp-arrow">›</div>
+    <div class="stp" data-s="7">🌐 Publicado</div>
+  </nav>
+  <!-- SCREEN: LOGIN -->
+  <div id="d-login" class="screen">
+    <div class="login-wrap dcrd" style="margin:auto;margin-top:calc(50vh - 250px)">
+      <div class="login-logo">✦ AI Article Platform</div>
+      <div class="login-card">
+        <div class="field"><label for="inp-email">Email</label><input type="email" id="inp-email" placeholder="tu@email.com"/></div>
+        <div class="field"><label for="inp-pass">Contraseña</label><input type="password" id="inp-pass" placeholder="••••••••"/></div>
+        <p style="font-size:.74rem;color:var(--muted);text-align:center">Selecciona un rol para el demo</p>
+        <div class="role-btns">
+          <div class="role-btn selected" data-role="author" tabindex="0" role="button" aria-pressed="true">✍️ Redactor<br><span style="font-weight:400;font-size:.7rem">Ana García</span></div>
+          <div class="role-btn" data-role="reviewer" tabindex="0" role="button" aria-pressed="false">🔍 Revisor<br><span style="font-weight:400;font-size:.7rem">Dr. Miguel Ruiz</span></div>
+        </div>
+        <button class="btn btn-primary" id="btn-login" style="width:100%;justify-content:center;margin-top:4px">Iniciar sesión</button>
+        <button class="btn btn-ghost btn-sm" id="btn-back-pres" style="width:100%;justify-content:center">← Volver a la presentación</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: DASHBOARD -->
+  <div id="d-dashboard" class="screen">
+    <div class="app-wrap">
+      <aside class="sidebar">
+        <div class="sidebar-logo">✦ Platform</div>
+        <div class="nav-item active" id="nav-articles">📄 Mis artículos</div>
+        <div class="nav-item">🤖 Asistente IA</div>
+        <button class="nav-item" id="btn-go-rag" style="border:none;cursor:pointer;width:100%;text-align:left;background:transparent;font-family:var(--font)">📁 Fuentes RAG</button>
+        <button class="nav-item" id="btn-open-profile" style="margin-top:auto;border:none;cursor:pointer;width:100%;text-align:left;background:transparent;font-family:var(--font)">⚙️ Perfil</button>
+      </aside>
+      <div style="overflow-y:auto">
+        <div class="main-pad">
+          <div class="dash-header">
+            <h1>Mis artículos</h1>
+            <div style="display:flex;gap:10px;align-items:center">
+              <div style="display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--muted)">
+                <div class="avatar" id="dash-avatar">AG</div><span id="dash-user-name">Ana García</span>
+              </div>
+              <button class="btn btn-primary btn-sm" id="btn-new-article">+ Nuevo artículo</button>
+            </div>
+          </div>
+          <div class="article-row" id="row-draft" tabindex="0" role="button" aria-label="Abrir artículo en borrador">
+            <div style="flex:1"><div class="article-title">Impacto de los LLMs en la Educación Superior</div><div class="article-meta">Editado hace 2 horas · Sin formato aún</div></div>
+            <span class="badge badge-draft">borrador</span>
+          </div>
+          <div class="article-row disabled">
+            <div style="flex:1"><div class="article-title">Ética en sistemas de inteligencia artificial</div><div class="article-meta">Enviado hace 1 día</div></div>
+            <span class="badge badge-review">en revisión</span>
+          </div>
+          <div class="article-row" id="row-published-static" tabindex="0" role="button" aria-label="Ver artículo publicado: Metodologías ágiles en proyectos científicos">
+            <div style="flex:1"><div class="article-title">Metodologías ágiles en proyectos científicos</div><div class="article-meta">Publicado el 15 de abril de 2026</div></div>
+            <span class="badge badge-published">publicado</span>
+          </div>
+          <div id="dash-rejected-row" class="article-row disabled" style="display:none;border-color:rgba(248,113,113,.3)">
+            <div style="flex:1"><div class="article-title">Impacto de los LLMs en la Educación Superior</div><div class="article-meta" id="dash-reject-msg" style="color:var(--red)">Rechazado — ver comentario</div></div>
+            <span class="badge" style="background:rgba(248,113,113,.15);color:var(--red)">rechazado</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Profile panel overlay -->
+    <div class="overlay" id="profile-overlay" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
+      <div class="modal-box" style="max-width:400px">
+        <div class="modal-title" id="profile-modal-title">⚙️ Perfil y configuración</div>
+        <div style="display:flex;align-items:center;gap:14px;padding:16px 0;border-bottom:1px solid var(--border);margin-bottom:16px">
+          <div class="avatar" id="profile-avatar" style="width:52px;height:52px;font-size:1.1rem">AG</div>
+          <div>
+            <div style="font-weight:700;font-size:1rem" id="profile-name">Ana García</div>
+            <div style="font-size:.78rem;color:var(--muted)" id="profile-email">ana.garcia@universidad.edu</div>
+            <span class="badge" id="profile-role-badge" style="background:rgba(108,99,255,.2);color:var(--accent2);margin-top:5px;display:inline-block">✍️ Redactor</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:.82rem;display:flex;justify-content:space-between">
+            <span style="color:var(--muted)">Artículos publicados</span><strong>1</strong>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:.82rem;display:flex;justify-content:space-between">
+            <span style="color:var(--muted)">En revisión</span><strong>1</strong>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:.82rem;display:flex;justify-content:space-between">
+            <span style="color:var(--muted)">Tokens IA usados hoy</span><strong>512 / 10 000</strong>
+          </div>
+        </div>
+        <div class="modal-footer" style="justify-content:space-between">
+          <button class="btn btn-ghost" id="btn-close-profile">Cerrar</button>
+          <button class="btn btn-red" id="btn-logout">🚪 Cerrar sesión</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: RAG SOURCES -->
+  <div id="d-rag" class="screen">
+    <div class="app-wrap">
+      <aside class="sidebar">
+        <div class="sidebar-logo">✦ Platform</div>
+        <button class="nav-item" id="rag-nav-articles" style="border:none;cursor:pointer;width:100%;text-align:left;background:transparent;font-family:var(--font)">📄 Mis artículos</button>
+        <div class="nav-item">🤖 Asistente IA</div>
+        <div class="nav-item active">📁 Fuentes RAG</div>
+        <button class="nav-item" id="rag-nav-profile" style="margin-top:auto;border:none;cursor:pointer;width:100%;text-align:left;background:transparent;font-family:var(--font)">⚙️ Perfil</button>
+      </aside>
+      <div style="overflow-y:auto;width:100%">
+        <div class="main-pad" style="max-width:760px">
+          <div class="dash-header">
+            <h1>📁 Fuentes RAG</h1>
+          </div>
+          <p style="font-size:.83rem;color:var(--muted);margin-bottom:18px;line-height:1.7">
+            Indexa PDFs o URLs en <strong style="color:var(--accent2)">Qdrant</strong>. El asistente de IA usará estas fuentes para nutrir tu redacción con referencias reales y contexto verificado.
+          </p>
+
+          <!-- Ingest form -->
+          <div class="dcrd" style="margin-bottom:22px">
+            <div style="font-weight:600;font-size:.9rem;margin-bottom:12px">➕ Añadir nueva fuente</div>
+            <div style="display:flex;gap:10px;margin-bottom:10px">
+              <button class="fmt-btn" id="rag-tab-url" style="flex:1;padding:8px" data-tab="url">🔗 URL</button>
+              <button class="fmt-btn" id="rag-tab-pdf" style="flex:1;padding:8px" data-tab="pdf">📄 PDF</button>
+            </div>
+            <div id="rag-form-url">
+              <div class="field"><label for="rag-url-input">URL del artículo o página</label><input type="url" id="rag-url-input" placeholder="https://arxiv.org/abs/..."/></div>
+              <p style="font-size:.72rem;color:var(--muted);margin:5px 0 10px">El agente RAGIngestAgent extraerá el texto, generará embeddings con <code style="color:var(--accent2)">nomic-embed-text</code> y almacenará los chunks en Qdrant.</p>
+            </div>
+            <div id="rag-form-pdf" style="display:none">
+              <div class="field">
+                <label>Archivo PDF</label>
+                <div id="rag-drop-zone" style="border:2px dashed var(--border);border-radius:8px;padding:24px;text-align:center;cursor:pointer;transition:border-color .2s;font-size:.83rem;color:var(--muted)" tabindex="0" role="button" aria-label="Zona de carga de PDF">
+                  <div style="font-size:1.8rem;margin-bottom:6px">📄</div>
+                  <span id="drop-label">Arrastra un PDF aquí o haz clic para seleccionar</span>
+                  <input type="file" id="rag-file-input" accept=".pdf" style="display:none" aria-label="Seleccionar PDF"/>
+                </div>
+              </div>
+            </div>
+            <button class="btn btn-primary" id="btn-ingest" style="width:100%;justify-content:center;margin-top:4px">⚡ Indexar en Qdrant</button>
+          </div>
+
+          <!-- Source list -->
+          <div style="font-weight:600;font-size:.88rem;margin-bottom:10px">Fuentes indexadas — <span id="rag-count">3</span> documentos</div>
+          <div id="rag-source-list" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: EDITOR -->
+  <div id="d-editor" class="screen">
+    <div class="editor-wrap">
+      <div class="editor-col">
+        <div class="editor-topbar">
+          <button class="btn btn-ghost btn-xs" id="btn-back-dash">← Dashboard</button>
+          <div class="breadcrumb">Artículos / <span>Impacto de los LLMs…</span></div>
+          <button class="btn btn-ghost btn-xs" id="btn-save" style="margin-left:auto">💾 Guardar</button>
+          <button class="btn btn-ghost btn-xs" id="btn-editor-exit" style="color:var(--muted)" title="Salir a la presentación">⎋ Salir</button>
+        </div>
+        <div class="tb" role="toolbar">
+          <button class="tb-btn" data-cmd="bold"><b>N</b></button>
+          <button class="tb-btn" data-cmd="italic"><i>C</i></button>
+          <button class="tb-btn" data-cmd="h1">H1</button>
+          <button class="tb-btn" data-cmd="h2">H2</button>
+          <button class="tb-btn" data-cmd="ul">≡ Lista</button>
+          <span style="flex:1"></span>
+          <button class="tb-btn hl" id="btn-ask-shortcut">🤖 Pedir ayuda a IA</button>
+        </div>
+        <input type="text" id="article-title-input" value="Impacto de los LLMs en la Educación Superior" aria-label="Título"/>
+        <textarea id="article-body-input" aria-label="Cuerpo"></textarea>
+        <div class="editor-footer">
+          <div class="format-tags" id="format-tags"></div>
+          <button class="btn btn-ghost btn-sm" id="btn-save2">Guardar borrador</button>
+          <button class="btn btn-primary btn-sm" id="btn-submit">📤 Enviar a revisión</button>
+        </div>
+      </div>
+      <div class="ai-col">
+        <div class="ai-header">🤖 Asistente IA <span style="font-size:.66rem;color:var(--muted);font-weight:400;margin-left:4px">RAG + Ollama</span></div>
+        <div class="ai-chat" id="ai-chat">
+          <div class="ai-msg bot"><div class="msg-text">Hola, Ana 👋 Estoy listo para ayudarte a redactar. Puedo buscar referencias, sugerir mejoras o completar secciones usando tus fuentes indexadas.</div></div>
+        </div>
+        <div class="ai-format-section">
+          <div class="ai-format-label">Formato científico</div>
+          <div class="fmt-btns">
+            <button class="fmt-btn" data-fmt="apa">APA 7ª</button>
+            <button class="fmt-btn" data-fmt="ieee">IEEE</button>
+            <button class="fmt-btn" data-fmt="vancouver">Vancouver</button>
+          </div>
+        </div>
+        <div class="ai-input-area">
+          <textarea id="ai-textarea" placeholder="Pregunta algo al asistente…" aria-label="Consulta IA"></textarea>
+          <button class="btn btn-primary btn-sm" id="btn-ask" style="width:100%;justify-content:center">Preguntar →</button>
+        </div>
+      </div>
+    </div>
+    <!-- Floating selection-to-AI button -->
+    <button id="sel-ai-btn" aria-label="Consultar selección con IA"
+      style="display:none;position:fixed;z-index:300;background:var(--accent);color:#fff;
+             border:none;border-radius:20px;padding:6px 14px;font-size:.78rem;font-weight:600;
+             cursor:pointer;font-family:var(--font);box-shadow:0 4px 16px rgba(108,99,255,.5);
+             pointer-events:all;white-space:nowrap">
+      🤖 Consultar con IA
+    </button>
+    <!-- Format modal -->
+    <div class="overlay" id="fmt-overlay" role="dialog" aria-modal="true" aria-labelledby="fmt-modal-title">
+      <div class="modal-box">
+        <div class="modal-title" id="fmt-modal-title">🔬 Formato <span id="fmt-name">APA 7ª ed.</span></div>
+        <p style="font-size:.8rem;color:var(--muted);margin-bottom:4px">El artículo NO se modifica hasta que hagas clic en "Aplicar".</p>
+        <div class="comparison">
+          <div class="cmp-panel"><div class="cmp-label before">Texto actual</div><div class="cmp-text" id="cmp-before"></div></div>
+          <div class="cmp-panel"><div class="cmp-label after">✓ Formateado</div><div class="cmp-text after" id="cmp-after"></div></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" id="btn-fmt-cancel">Descartar</button>
+          <button class="btn btn-green" id="btn-fmt-apply">✓ Aplicar formato</button>
+        </div>
+      </div>
+    </div>
+    <!-- Submit confirm -->
+    <div class="overlay" id="submit-overlay" role="dialog" aria-modal="true" aria-labelledby="sub-modal-title">
+      <div class="modal-box" style="max-width:440px">
+        <div class="modal-title" id="sub-modal-title">📤 Confirmar envío a revisión</div>
+        <p style="font-size:.83rem;color:var(--muted);line-height:1.7;margin-bottom:14px">El artículo pasará a <strong style="color:var(--yellow)">en revisión</strong>. No podrás editarlo hasta que el revisor emita su dictamen.</p>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:4px">
+          <div style="font-weight:600;margin-bottom:3px" id="confirm-title"></div>
+          <div style="font-size:.76rem;color:var(--muted)">Revisor asignado: <strong style="color:var(--text)">Dr. Miguel Ruiz</strong></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" id="btn-submit-cancel">Cancelar</button>
+          <button class="btn btn-primary" id="btn-submit-confirm">Confirmar envío →</button>
+        </div>
+      </div>
+    </div>
+    <!-- Save-draft confirm modal -->
+    <div class="overlay" id="save-draft-overlay" role="dialog" aria-modal="true" aria-labelledby="save-draft-title">
+      <div class="modal-box" style="max-width:420px">
+        <div class="modal-title" id="save-draft-title">💾 ¿Guardar cambios?</div>
+        <p style="font-size:.83rem;color:var(--muted);line-height:1.7;margin-bottom:16px">
+          Tienes cambios sin guardar en este artículo. ¿Qué deseas hacer antes de volver al dashboard?
+        </p>
+        <div class="modal-footer" style="justify-content:space-between">
+          <button class="btn btn-red btn-sm" id="btn-discard-draft">Descartar cambios</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost" id="btn-cancel-back">× Cancelar</button>
+            <button class="btn btn-green" id="btn-save-and-back">💾 Guardar borrador</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: SUBMITTED -->
+  <div id="d-submitted" class="screen">
+    <div class="submitted-card">
+      <div class="submitted-icon">✅</div>
+      <h2>¡Enviado a revisión!</h2>
+      <p>Tu artículo ha sido enviado correctamente. El revisor asignado recibirá una notificación.</p>
+      <div class="reviewer-card">
+        <div class="avatar" style="width:40px;height:40px">MR</div>
+        <div><strong>Dr. Miguel Ruiz</strong><br><small style="color:var(--muted)">Revisor asignado · Notificación enviada</small></div>
+        <span class="badge badge-review" style="margin-left:auto">en revisión</span>
+      </div>
+      <button class="btn btn-primary" id="btn-go-review">Ver como Revisor →</button>
+      <button class="btn btn-ghost btn-sm" id="btn-back-dash2">Volver al dashboard</button>
+    </div>
+  </div>
+
+  <!-- SCREEN: REVIEW -->
+  <div id="d-review" class="screen">
+    <div class="review-wrap">
+      <div class="review-paper">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+          <span class="badge badge-review">en revisión</span>
+          <span style="font-size:.74rem;color:var(--muted)">Enviado por Ana García</span>
+        </div>
+        <div class="paper-title" id="rev-title"></div>
+        <div class="paper-meta"><span id="rev-format-tag"></span>Asistencia IA utilizada · <span style="color:var(--accent2)">512 tokens</span> · 3 fuentes RAG</div>
+        <div class="paper-body" id="rev-body"></div>
+      </div>
+      <div class="review-actions">
+        <div class="reviewer-profile">
+          <div class="avatar" style="width:40px;height:40px">MR</div>
+          <div><strong style="font-size:.88rem">Dr. Miguel Ruiz</strong><br><small style="color:var(--muted);font-size:.74rem">Revisor · Panel de aprobación</small></div>
+        </div>
+        <div class="action-card">
+          <h3>Decisión del revisor</h3>
+          <button class="btn btn-green" id="btn-approve" style="width:100%;justify-content:center">✓ Aprobar artículo</button>
+          <button class="btn btn-red btn-sm" id="btn-reject-show" style="width:100%;justify-content:center">✕ Rechazar</button>
+          <div class="reject-area" id="reject-area">
+            <label for="reject-comment">Motivo del rechazo</label>
+            <textarea id="reject-comment" placeholder="Escribe el comentario para el autor…"></textarea>
+            <button class="btn btn-red btn-sm" id="btn-reject-send" style="width:100%;justify-content:center">Enviar rechazo</button>
+          </div>
+        </div>
+        <div style="font-size:.71rem;color:var(--muted);line-height:1.6;padding:9px;background:var(--surface2);border-radius:7px;border:1px solid var(--border)">
+          ℹ️ Al aprobar, el artículo se publica <strong>automáticamente</strong> y será visible públicamente.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: PUBLISHED -->
+  <div id="d-published" class="screen">
+    <div class="pub-wrapper">
+      <div id="pub-success-bar" class="pub-success-bar">🎉 ¡Artículo publicado con éxito! Ya es visible públicamente en la plataforma.</div>
+      <div class="pub-url">🔗 <code id="pub-url-text"></code><button class="btn btn-ghost btn-xs" onclick="toast('URL copiada','ok')" style="margin-left:auto">Copiar</button></div>
+      <div class="pub-article" role="article">
+        <div class="pub-cover">
+          <div class="pub-cover-title" id="pub-cover-title"></div>
+          <div class="pub-cover-meta">Ana García · 1 de mayo de 2026 · <span id="pub-fmt-meta">Sin formato</span></div>
+        </div>
+        <div class="pub-body" id="pub-body"></div>
+        <div class="pub-footer">
+          <span>✦ AI Article Platform</span>
+          <div style="display:flex;gap:8px"><span class="badge badge-published">publicado</span><button class="btn btn-ghost btn-xs">🔗 Compartir</button><button class="btn btn-ghost btn-xs">📄 PDF</button></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center;padding-bottom:40px">
+        <button class="btn btn-ghost btn-sm" id="btn-back-dash3">← Dashboard</button>
+        <button class="btn btn-primary btn-sm" id="btn-restart" style="display:none">↺ Reiniciar demo</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- SCREEN: AGENT BUILDER -->
+  <div id="d-agents" class="screen">
+    <div class="app-wrap">
+      <aside class="sidebar">
+        <div class="sidebar-logo">✦ Platform v2</div>
+        <button class="nav-item" id="agents-nav-articles" style="border:none;cursor:pointer;width:100%;text-align:left;background:transparent;font-family:var(--font)">📄 Mis artículos</button>
+        <div class="nav-item active">🤖 Agentes</div>
+        <button class="nav-item" id="agents-nav-rag" style="border:none;cursor:pointer;width:100%;text-align:left;background:transparent;font-family:var(--font)">📁 Fuentes RAG</button>
+        <button class="nav-item" id="agents-nav-profile" style="margin-top:auto;border:none;cursor:pointer;width:100%;text-align:left;background:transparent;font-family:var(--font)">⚙️ Perfil</button>
+      </aside>
+      <div style="overflow-y:auto;width:100%">
+        <div class="main-pad" style="max-width:820px">
+          <div class="dash-header">
+            <h1>🤖 Agent Builder</h1>
+            <div style="font-size:.78rem;color:var(--muted)">Configura el enjambre para tu artículo</div>
+          </div>
+          <p style="font-size:.83rem;color:var(--muted);margin-bottom:18px;line-height:1.7">
+            Selecciona los agentes que quieres activar y pulsa <strong style="color:var(--green)">⚡ Ejecutar enjambre</strong> desde el editor para lanzarlos sobre tu artículo.
+          </p>
+          <div id="agent-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px"></div>
+          <div class="dcrd" style="background:rgba(34,197,94,.05);border-color:rgba(34,197,94,.3)">
+            <div style="font-weight:600;color:var(--green);margin-bottom:8px">🎭 Orquestador (LangGraph)</div>
+            <div style="font-size:.81rem;color:var(--muted);line-height:1.7">Siempre activo. Gestiona el estado compartido, coordina la ejecución paralela y garantiza que ningún agente publique sin aprobación humana.</div>
+          </div>
+          <div style="margin-top:20px;display:flex;gap:10px">
+            <button class="btn btn-ghost btn-sm" id="agents-back-dash">← Volver al dashboard</button>
+            <button class="btn btn-primary btn-sm" id="agents-go-editor" style="margin-left:auto">✍️ Ir al editor →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: SWARM EXECUTION -->
+  <div id="d-swarm" class="screen">
+    <div style="width:100%;max-width:860px;margin:0 auto;padding:68px 24px 40px">
+      <div style="margin-bottom:20px">
+        <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:4px">⚡ Enjambre ejecutando&hellip;</h2>
+        <p style="font-size:.85rem;color:var(--muted)">LangGraph orquesta los agentes en paralelo sobre tu artículo. El estado compartido se actualiza en tiempo real.</p>
+      </div>
+      <div id="swarm-agent-rows" style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px"></div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:16px">
+        <div style="font-size:.76rem;font-weight:700;color:var(--accent2);margin-bottom:10px">📜 Log del Orquestador</div>
+        <div id="swarm-log" style="font-family:monospace;font-size:.74rem;color:var(--muted);max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:3px"></div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:20px">
+        <div style="font-size:.76rem;font-weight:700;color:var(--accent2);margin-bottom:10px">🔄 Estado compartido</div>
+        <div id="swarm-state" style="font-family:monospace;font-size:.74rem;color:var(--muted);line-height:1.8"></div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-ghost btn-sm" id="btn-swarm-back">← Volver al editor</button>
+        <button class="btn btn-primary btn-sm" id="btn-swarm-next" style="margin-left:auto" disabled>Ir a revisión humana →</button>
+      </div>
+    </div>
+  </div>
+</div><!-- /demo -->
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     JAVASCRIPT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<script>
+/* ── PRESENTATION ────────────────────────────────────────────────────────── */
+const slides = Array.from(document.querySelectorAll('#presentation .slide'));
+const dotsEl = document.getElementById('pres-dots');
+let cur = 0;
+
+slides.forEach((_, i) => {
+  const d = document.createElement('button');
+  d.className = 'pndot' + (i === 0 ? ' active' : '');
+  d.setAttribute('role','tab');
+  d.setAttribute('aria-label', `Diapositiva ${i+1}`);
+  d.addEventListener('click', () => goSlide(i));
+  dotsEl.appendChild(d);
+});
+
+function goSlide(n) {
+  if (n < 0 || n >= slides.length) return;
+  slides[cur].classList.remove('active');
+  slides[cur].classList.add('out-up');
+  setTimeout(() => slides[cur >= 0 ? cur : 0].classList.remove('out-up'), 380);
+  cur = n;
+  slides[cur].classList.add('active');
+  slides[cur].classList.remove('out-up');
+  document.querySelectorAll('.pndot').forEach((d,i) => {
+    d.classList.toggle('active', i === cur);
+    d.classList.toggle('done', i < cur);
+  });
+  document.getElementById('pres-counter').textContent = `${cur+1} / ${slides.length}`;
+  const hint = document.getElementById('slide-hint');
+  hint.style.opacity = cur === slides.length - 1 ? '0' : '1';
+}
+
+document.getElementById('btn-next').addEventListener('click', () => goSlide(cur + 1));
+document.getElementById('btn-prev').addEventListener('click', () => goSlide(cur - 1));
+
+document.addEventListener('keydown', e => {
+  if (document.getElementById('demo').classList.contains('show')) return;
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); goSlide(cur + 1); }
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   { e.preventDefault(); goSlide(cur - 1); }
+});
+
+/* Mouse wheel navigation — capture phase so it fires before inner-element scroll */
+let _wheelLock = false;
+window.addEventListener('wheel', e => {
+  if (document.getElementById('demo').classList.contains('show')) return;
+  if (document.getElementById('presentation').classList.contains('hide')) return;
+  e.preventDefault();
+  e.stopPropagation();
+  if (_wheelLock) return;
+  _wheelLock = true;
+  setTimeout(() => { _wheelLock = false; }, 700);
+  if (e.deltaY > 0) goSlide(cur + 1);
+  else              goSlide(cur - 1);
+}, { passive: false, capture: true });
+
+/* Launch demo */
+document.getElementById('btn-start-demo').addEventListener('click', () => {
+  const pres = document.getElementById('presentation');
+  const demo = document.getElementById('demo');
+  pres.classList.add('hide');
+  demo.classList.add('show');
+  // ensure login screen is active
+  document.querySelectorAll('#demo .screen').forEach(s => s.classList.remove('active','exit'));
+  document.getElementById('d-login').classList.add('active');
+  document.getElementById('stepper').classList.add('hidden');
+});
+
+/* ── DEMO ────────────────────────────────────────────────────────────────── */
+const DS = {
+  role:'author',
+  users:{ author:{name:'Ana García',initials:'AG'}, reviewer:{name:'Dr. Miguel Ruiz',initials:'MR'} },
+  article:{ title:'Impacto de los LLMs en la Educación Superior', body:'', format:null, aiUsed:false },
+  ragSources:[
+    { id:1, type:'pdf',  name:'Fernández et al. (2024) — LLMs in Higher Education.pdf',  chunks:42, score:'0.91', date:'28 abr 2026' },
+    { id:2, type:'url',  name:'https://edtech-review.org/llm-adaptive-learning-2024',     chunks:18, score:'0.87', date:'29 abr 2026' },
+    { id:3, type:'pdf',  name:'Smith (2023) — Adaptive Learning Systems.pdf',             chunks:35, score:'0.83', date:'30 abr 2026' }
+  ]
+};
+
+const BODY = {
+  initial:`Los modelos de lenguaje han transformado radicalmente la forma en que los estudiantes acceden al conocimiento. En los últimos años, herramientas basadas en LLMs han sido adoptadas masivamente en universidades de todo el mundo.
+
+Esta adopción plantea tanto oportunidades como desafíos para el sistema educativo. Los estudiantes utilizan estas herramientas para resolver dudas, resumir textos y apoyar la redacción de trabajos académicos.
+
+Sin embargo, esto también genera preocupaciones sobre la originalidad y el desarrollo de habilidades de pensamiento crítico en el contexto universitario.`,
+
+  withAI:`Los modelos de lenguaje han transformado radicalmente la forma en que los estudiantes acceden al conocimiento. En los últimos años, herramientas basadas en LLMs han sido adoptadas masivamente en universidades de todo el mundo.
+
+Según Fernández et al. (2024), los sistemas LLM aplicados a entornos educativos muestran una mejora del 23% en retención de conceptos cuando el feedback es adaptativo e inmediato. Este hallazgo es consistente con los estudios de Smith (2023) sobre aprendizaje personalizado.
+
+Adicionalmente, García & López (2024) confirman en estudios con tres universidades europeas que la implementación efectiva de LLMs en docencia requiere formación específica del profesorado y un marco de uso ético claro.
+
+Sin embargo, esto también genera preocupaciones sobre la originalidad y el desarrollo de habilidades de pensamiento crítico en el contexto universitario.`,
+
+  apa:`Los modelos de lenguaje de gran escala (LLMs) han transformado radicalmente los paradigmas de acceso al conocimiento en la educación superior (Fernández et al., 2024). La adopción masiva de estas herramientas plantea oportunidades pedagógicas y desafíos epistemológicos de considerable relevancia.
+
+Fernández et al. (2024) demostraron que la implementación de sistemas LLM en contextos universitarios se asocia con un incremento del 23% en la retención conceptual (p < .001), particularmente cuando el feedback es adaptativo e inmediato. Este hallazgo resulta consistente con los de Smith (2023) en aprendizaje personalizado adaptativo.
+
+Referencias:
+Fernández, J., et al. (2024). LLMs in Higher Education. Journal of Educational Technology, 18(2), 45–67.
+Smith, A. (2023). Adaptive Learning Systems. International Journal of Learning, 12(1), 12–28.
+García, P., & López, M. (2024). AI in European Universities. European Education Review, 9(3), 88–102.`,
+
+  ieee:`Large Language Models (LLMs) have fundamentally transformed knowledge access paradigms in higher education [1]. Their widespread adoption in universities presents significant pedagogical opportunities and epistemological challenges.
+
+According to [1], LLM implementation in university contexts is associated with a 23% increase in conceptual retention (p<0.001), particularly when system feedback is adaptive and immediate.
+
+[1] J. Fernández et al., "LLMs in Higher Education," J. Educ. Tech., vol. 18, no. 2, pp. 45–67, 2024.
+[2] A. Smith, "Adaptive Learning Systems," Int. J. Learn., vol. 12, no. 1, pp. 12–28, 2023.`,
+
+  vancouver:`Los modelos de lenguaje de gran escala (LLMs) han transformado profundamente el acceso al conocimiento en educación superior (1). Su adopción masiva en universidades genera oportunidades y desafíos pedagógicos de relevancia.
+
+Fernández y col. (1) demostraron que el uso de LLMs en contextos universitarios se asocia con un 23% de aumento en retención conceptual (p<0,001).
+
+1. Fernández J et al. LLMs in Higher Education. J Educ Tech. 2024;18(2):45-67.
+2. Smith A. Adaptive Learning Systems. Int J Learn. 2023;12(1):12-28.`
+};
+
+function toast(msg, type='info') {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+}
+
+function setLoading(btn, loading) {
+  if (loading) { btn._orig = btn.innerHTML; btn.innerHTML = '<div class="spin"></div> Procesando…'; btn.disabled = true; }
+  else { btn.innerHTML = btn._orig; btn.disabled = false; }
+}
+
+function stepTo(n) {
+  document.querySelectorAll('.stp').forEach(s => {
+    const sn = +s.dataset.s;
+    s.classList.remove('active','done');
+    if (sn < n) s.classList.add('done');
+    if (sn === n) s.classList.add('active');
+  });
+}
+
+function go(id, step) {
+  document.querySelectorAll('#demo .screen').forEach(s => { s.classList.remove('active','exit'); s.classList.add('exit'); });
+  const next = document.getElementById(id);
+  next.classList.remove('exit');
+  setTimeout(() => next.classList.add('active'), 20);
+  if (step) { document.getElementById('stepper').classList.remove('hidden'); stepTo(step); }
+}
+
+function openOverlay(id) { document.getElementById(id).classList.add('show'); }
+function closeOverlay(id) { document.getElementById(id).classList.remove('show'); }
+
+function typeInto(el, text, done) {
+  el.textContent = '';
+  const cur = document.createElement('span'); cur.className = 'cursor'; el.appendChild(cur);
+  let i = 0;
+  const iv = setInterval(() => {
+    if (i >= text.length) { clearInterval(iv); cur.remove(); if(done) done(); return; }
+    el.insertBefore(document.createTextNode(text.slice(i, i+4)), cur); i+=4;
+  }, 20);
+}
+
+/* ─ Back to presentation helper ─ */
+function backToPresentation(slide) {
+  document.querySelectorAll('#demo .screen').forEach(s => s.classList.remove('active','exit'));
+  document.getElementById('demo').classList.remove('show');
+  document.getElementById('presentation').classList.remove('hide');
+  if (slide !== undefined) goSlide(slide);
+}
+
+document.getElementById('btn-back-pres').addEventListener('click', () => backToPresentation());
+
+
+/* ─ Login ─ */
+document.querySelectorAll('.role-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.role-btn').forEach(b => { b.classList.remove('selected'); b.setAttribute('aria-pressed','false'); });
+    btn.classList.add('selected'); btn.setAttribute('aria-pressed','true');
+    DS.role = btn.dataset.role;
+    document.getElementById('inp-email').value = DS.role === 'author' ? 'ana.garcia@universidad.edu' : 'miguel.ruiz@universidad.edu';
+  });
+});
+
+document.getElementById('btn-login').addEventListener('click', () => {
+  const email = document.getElementById('inp-email').value.trim();
+  const pass  = document.getElementById('inp-pass').value.trim();
+  if (!email || !pass) { toast('Completa email y contraseña','warn'); return; }
+  const btn = document.getElementById('btn-login');
+  setLoading(btn, true);
+  setTimeout(() => {
+    setLoading(btn, false);
+    const u = DS.users[DS.role];
+    toast(`¡Bienvenido/a, ${u.name}! 👋`, 'ok');
+    document.getElementById('dash-avatar').textContent = u.initials;
+    document.getElementById('dash-user-name').textContent = u.name;
+    if (DS.role === 'reviewer') { populateReview(); go('d-review', 7); }
+    else go('d-dashboard', 2);
+  }, 1000);
+});
+
+/* ─ RAG Sources ─ */
+function renderRagSources() {
+  const list = document.getElementById('rag-source-list');
+  list.innerHTML = '';
+  document.getElementById('rag-count').textContent = DS.ragSources.length;
+  DS.ragSources.forEach(src => {
+    const icon = src.type === 'pdf' ? '📄' : '🔗';
+    const div = document.createElement('div');
+    div.className = 'article-row disabled';
+    div.style.cursor = 'default';
+    div.innerHTML = `
+      <div style="font-size:1.3rem;flex-shrink:0">${icon}</div>
+      <div style="flex:1;min-width:0">
+        <div class="article-title" style="font-size:.83rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${src.name}</div>
+        <div class="article-meta">${src.chunks} chunks · score medio ${src.score} · indexado el ${src.date}</div>
+      </div>
+      <span class="badge" style="background:rgba(34,197,94,.15);color:var(--green);flex-shrink:0">✓ Qdrant</span>`;
+    list.appendChild(div);
+  });
+}
+
+document.getElementById('btn-go-rag').addEventListener('click', () => {
+  renderRagSources(); go('d-rag', 25);
+});
+document.getElementById('rag-nav-articles').addEventListener('click', () => go('d-dashboard', 2));
+document.getElementById('rag-nav-profile').addEventListener('click', () => {
+  openOverlay('profile-overlay'); // profile overlay is in #d-dashboard but overlay is fixed, still works
+});
+
+// Tab toggle URL / PDF
+document.querySelectorAll('[data-tab]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-tab]').forEach(b => b.style.borderColor = 'var(--border)');
+    btn.style.borderColor = 'var(--accent)'; btn.style.color = 'var(--accent2)';
+    document.getElementById('rag-form-url').style.display = btn.dataset.tab === 'url' ? '' : 'none';
+    document.getElementById('rag-form-pdf').style.display = btn.dataset.tab === 'pdf' ? '' : 'none';
+  });
+});
+
+// Drop zone for PDF
+const dropZone = document.getElementById('rag-drop-zone');
+const fileInput = document.getElementById('rag-file-input');
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' ') fileInput.click(); });
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.style.borderColor='var(--accent)'; });
+dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor='var(--border)'; });
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.style.borderColor='var(--border)';
+  const f = e.dataTransfer.files[0];
+  if (f) document.getElementById('drop-label').textContent = '📄 ' + f.name;
+});
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) document.getElementById('drop-label').textContent = '📄 ' + fileInput.files[0].name;
+});
+
+document.getElementById('btn-ingest').addEventListener('click', () => {
+  const isUrl = document.getElementById('rag-form-url').style.display !== 'none';
+  const urlVal = document.getElementById('rag-url-input').value.trim();
+  const fileName = fileInput.files[0] ? fileInput.files[0].name : document.getElementById('drop-label').textContent.replace('📄 ','').trim();
+  const srcName = isUrl ? urlVal : fileName;
+  if (!srcName || srcName === 'Arrastra un PDF aquí o haz clic para seleccionar') {
+    toast('Indica una URL o selecciona un PDF primero', 'warn'); return;
+  }
+  const btn = document.getElementById('btn-ingest');
+  btn._orig = btn.innerHTML; btn.innerHTML = '<div class="spin"></div> Indexando en Qdrant…'; btn.disabled = true;
+  // simulate chunking + embedding progress
+  let step = 0;
+  const steps = ['Extrayendo texto…','Generando chunks…','Calculando embeddings (nomic-embed-text)…','Almacenando en Qdrant…','¡Indexado!'];
+  const iv = setInterval(() => {
+    if (step < steps.length - 1) {
+      toast(steps[step], 'info'); step++;
+    } else {
+      clearInterval(iv);
+      btn.innerHTML = btn._orig; btn.disabled = false;
+      toast('✓ Fuente indexada correctamente', 'ok');
+      const chunks = Math.floor(Math.random() * 30) + 12;
+      const today = '1 may 2026';
+      DS.ragSources.unshift({ id: Date.now(), type: isUrl ? 'url' : 'pdf', name: srcName, chunks, score: '0.8' + Math.floor(Math.random()*9+1), date: today });
+      renderRagSources();
+      document.getElementById('rag-url-input').value = '';
+      fileInput.value = ''; document.getElementById('drop-label').textContent = 'Arrastra un PDF aquí o haz clic para seleccionar';
+    }
+  }, 700);
+});
+
+/* ─ Dashboard ─ */
+function openEditor() {
+  document.getElementById('article-body-input').value = BODY.initial;
+  DS.article.body = BODY.initial; DS.article.format = null; DS.article.aiUsed = false;
+  document.getElementById('format-tags').innerHTML = '';
+  // reset AI chat to welcome
+  const srcList = DS.ragSources.slice(0,3).map(s => `<span style="color:var(--accent2)">📄 ${s.name.slice(0,45)}…</span>`).join('<br>');
+  document.getElementById('ai-chat').innerHTML =
+    `<div class="ai-msg bot"><div class="msg-text">Hola, Ana 👋 Tengo acceso a <strong>${DS.ragSources.length} fuentes indexadas</strong> en Qdrant:<br><br>${srcList}<br><br>Pregúntame cualquier cosa y buscaré en estas fuentes para nutrir tu redacción.</div></div>`;
+  go('d-editor', 3);
+  // proactive RAG suggestion after 1.5 s
+  setTimeout(() => {
+    const chat = document.getElementById('ai-chat');
+    const hint = document.createElement('div'); hint.className = 'ai-msg bot';
+    hint.innerHTML = `<div class="msg-text" style="border-left:3px solid var(--accent2);padding-left:8px">
+      💡 <strong>Consejo:</strong> Selecciona cualquier fragmento del texto y pulsa
+      el botón flotante <strong>🤖 Consultar con IA</strong>, o escribe tu consulta abajo.
+      Buscaré en tus ${DS.ragSources.length} fuentes indexadas.
+    </div>`;
+    chat.appendChild(hint); chat.scrollTop = chat.scrollHeight;
+    const ta = document.getElementById('ai-textarea');
+    ta.value = '¿Qué referencias hay sobre el impacto de LLMs en aprendizaje universitario?';
+    const btn = document.getElementById('btn-ask');
+    btn.classList.add('pulse-once');
+    setTimeout(() => btn.classList.remove('pulse-once'), 1200);
+  }, 1500);
+}
+document.getElementById('btn-new-article').addEventListener('click', openEditor);
+document.getElementById('row-draft').addEventListener('click', openEditor);
+document.getElementById('row-draft').addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' ') openEditor(); });
+
+/* ─ Editor toolbar ─ */
+document.querySelectorAll('.tb-btn[data-cmd]').forEach(b => {
+  b.addEventListener('click', () => {
+    const ta = document.getElementById('article-body-input');
+    const cmd = b.dataset.cmd, s = ta.selectionStart, e2 = ta.selectionEnd, sel = ta.value.slice(s,e2);
+    let ins = sel;
+    if(cmd==='bold')   ins=`**${sel}**`;
+    if(cmd==='italic') ins=`_${sel}_`;
+    if(cmd==='h1')     ins=`\n# ${sel}`;
+    if(cmd==='h2')     ins=`\n## ${sel}`;
+    if(cmd==='ul')     ins=`\n- ${sel}`;
+    ta.setRangeText(ins,s,e2,'end'); ta.focus();
+    toast(`Formato "${cmd}" aplicado`,'info');
+  });
+});
+
+document.getElementById('btn-back-dash').addEventListener('click', () => {
+  openOverlay('save-draft-overlay');
+});
+document.getElementById('btn-cancel-back').addEventListener('click', () => closeOverlay('save-draft-overlay'));
+document.getElementById('btn-save-and-back').addEventListener('click', () => {
+  DS.article.body = document.getElementById('article-body-input').value;
+  closeOverlay('save-draft-overlay');
+  toast('Borrador guardado ✓', 'ok');
+  go('d-dashboard', 2);
+});
+document.getElementById('btn-discard-draft').addEventListener('click', () => {
+  closeOverlay('save-draft-overlay');
+  toast('Cambios descartados', 'warn');
+  go('d-dashboard', 2);
+});
+document.getElementById('btn-editor-exit').addEventListener('click', () => {
+  DS.article.body = document.getElementById('article-body-input').value;
+  toast('Borrador guardado ✓', 'ok');
+  setTimeout(() => backToPresentation(0), 500);
+});
+
+/* ─ Profile panel ─ */
+document.getElementById('btn-open-profile').addEventListener('click', () => {
+  const u = DS.users[DS.role];
+  document.getElementById('profile-avatar').textContent = u.initials;
+  document.getElementById('profile-name').textContent   = u.name;
+  document.getElementById('profile-email').textContent  = DS.role === 'author' ? 'ana.garcia@universidad.edu' : 'miguel.ruiz@universidad.edu';
+  document.getElementById('profile-role-badge').textContent = DS.role === 'author' ? '✍️ Redactor' : '🔍 Revisor';
+  openOverlay('profile-overlay');
+});
+document.getElementById('btn-close-profile').addEventListener('click', () => closeOverlay('profile-overlay'));
+document.getElementById('btn-logout').addEventListener('click', () => {
+  closeOverlay('profile-overlay');
+  toast('Sesión cerrada ✓', 'ok');
+  setTimeout(() => backToPresentation(0), 600);
+});
+document.getElementById('btn-save').addEventListener('click', () => { DS.article.body = document.getElementById('article-body-input').value; toast('Borrador guardado ✓','ok'); });
+document.getElementById('btn-save2').addEventListener('click', () => { DS.article.body = document.getElementById('article-body-input').value; toast('Borrador guardado ✓','ok'); });
+document.getElementById('btn-ask-shortcut').addEventListener('click', () => { document.getElementById('ai-textarea').focus(); toast('Escribe tu consulta en el panel de IA →','info'); });
+
+/* ─ Selection → AI floating button ─ */
+const selBtn = document.getElementById('sel-ai-btn');
+document.getElementById('article-body-input').addEventListener('mouseup', positionSelBtn);
+document.getElementById('article-body-input').addEventListener('keyup',   positionSelBtn);
+function positionSelBtn(e) {
+  const ta = document.getElementById('article-body-input');
+  const sel = ta.value.slice(ta.selectionStart, ta.selectionEnd).trim();
+  if (!sel || sel.length < 4) { selBtn.style.display = 'none'; return; }
+  const rect = ta.getBoundingClientRect();
+  selBtn.style.top  = (rect.top  + window.scrollY - 38) + 'px';
+  selBtn.style.left = (rect.left + window.scrollX + rect.width / 2 - 80) + 'px';
+  selBtn.style.display = 'block';
+  selBtn._sel = sel;
+}
+selBtn.addEventListener('click', () => {
+  const ta2 = document.getElementById('ai-textarea');
+  ta2.value = `Busca referencias sobre: "${selBtn._sel.slice(0,80)}"`;
+  selBtn.style.display = 'none';
+  ta2.focus();
+  stepTo(4);
+  toast('Consulta cargada — pulsa Preguntar →', 'info');
+});
+document.addEventListener('mousedown', e => { if (e.target !== selBtn) selBtn.style.display = 'none'; });
+
+/* ─ AI textarea focus → stepper step 4 ─ */
+document.getElementById('ai-textarea').addEventListener('focus', () => {
+  if (document.getElementById('d-editor').classList.contains('active')) stepTo(4);
+});
+
+/* ─ AI assistant ─ */
+document.getElementById('btn-ask').addEventListener('click', askAI);
+document.getElementById('ai-textarea').addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();askAI();} });
+
+function askAI() {
+  const ta = document.getElementById('ai-textarea');
+  const q = ta.value.trim(); if(!q){ toast('Escribe una consulta primero','warn'); return; }
+  ta.value = ''; stepTo(4);
+  const chat = document.getElementById('ai-chat');
+  const uMsg = document.createElement('div'); uMsg.className='ai-msg user'; uMsg.textContent=q; chat.appendChild(uMsg);
+  const thinking = document.createElement('div'); thinking.className='ai-thinking';
+  thinking.innerHTML='<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+  chat.appendChild(thinking); chat.scrollTop=chat.scrollHeight;
+  setTimeout(() => {
+    thinking.remove();
+    const botMsg = document.createElement('div'); botMsg.className='ai-msg bot';
+    const textEl = document.createElement('div'); textEl.className='msg-text';
+    botMsg.appendChild(textEl); chat.appendChild(botMsg); chat.scrollTop=chat.scrollHeight;
+    const resp = `Según Fernández et al. (2024), los sistemas LLM aplicados a entornos educativos muestran una mejora del 23% en retención de conceptos cuando el feedback es adaptativo e inmediato.\n\nGarcía & López (2024) confirman en tres universidades europeas que la implementación efectiva requiere formación docente específica y un marco de uso ético claro.`;
+    typeInto(textEl, resp, () => {
+      // build source list from DS.ragSources (top 3)
+      const srcDiv = document.createElement('div'); srcDiv.className='ai-sources';
+      const topSrcs = DS.ragSources.slice(0,3);
+      topSrcs.forEach(s => {
+        const d = document.createElement('div'); d.className='ai-source';
+        const icon = s.type==='pdf' ? '📄' : '🌐';
+        d.textContent=`${icon} ${s.name.replace('https://','').slice(0,55)} — score ${s.score}`;
+        srcDiv.appendChild(d);
+      });
+      const badge = document.createElement('div');
+      badge.style.cssText='font-size:.68rem;color:var(--muted);margin-top:4px';
+      badge.textContent=`${topSrcs.length} de ${DS.ragSources.length} fuentes consultadas en Qdrant`;
+      srcDiv.appendChild(badge);
+      botMsg.appendChild(srcDiv);
+      const addBtn = document.createElement('button');
+      addBtn.className='btn btn-ghost btn-xs'; addBtn.style.marginTop='6px';
+      addBtn.textContent='+ Añadir sugerencia al artículo';
+      addBtn.addEventListener('click', () => {
+        document.getElementById('article-body-input').value = BODY.withAI;
+        DS.article.body = BODY.withAI; DS.article.aiUsed = true;
+        addBtn.textContent='✓ Añadido'; addBtn.disabled=true;
+        toast('Sugerencia añadida al artículo ✓','ok');
+      });
+      botMsg.appendChild(addBtn); chat.scrollTop=chat.scrollHeight;
+    });
+  }, 1600);
+}
+
+/* ─ Format ─ */
+let pendingFmt = null;
+document.querySelectorAll('.fmt-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    pendingFmt = b.dataset.fmt;
+    const names={apa:'APA 7ª ed.',ieee:'IEEE',vancouver:'Vancouver'};
+    document.getElementById('fmt-name').textContent = names[pendingFmt];
+    const cur2 = document.getElementById('article-body-input').value || BODY.initial;
+    document.getElementById('cmp-before').textContent = cur2.slice(0,380)+(cur2.length>380?'…':'');
+    document.getElementById('cmp-after').textContent  = BODY[pendingFmt].slice(0,380)+'…';
+    stepTo(5); openOverlay('fmt-overlay');
+  });
+});
+document.getElementById('btn-fmt-cancel').addEventListener('click', () => closeOverlay('fmt-overlay'));
+document.getElementById('btn-fmt-apply').addEventListener('click', () => {
+  const names={apa:'APA 7ª ed.',ieee:'IEEE',vancouver:'Vancouver'};
+  document.getElementById('article-body-input').value = BODY[pendingFmt];
+  DS.article.body = BODY[pendingFmt]; DS.article.format = pendingFmt;
+  closeOverlay('fmt-overlay');
+  const tag = document.createElement('span'); tag.className='fmt-active'; tag.textContent=`✓ ${names[pendingFmt]}`;
+  const tEl = document.getElementById('format-tags'); tEl.innerHTML=''; tEl.appendChild(tag);
+  toast(`Formato ${names[pendingFmt]} aplicado ✓`,'ok');
+});
+
+/* ─ Submit ─ */
+document.getElementById('btn-submit').addEventListener('click', () => {
+  DS.article.title = document.getElementById('article-title-input').value;
+  document.getElementById('confirm-title').textContent = DS.article.title;
+  openOverlay('submit-overlay');
+});
+document.getElementById('btn-submit-cancel').addEventListener('click', () => closeOverlay('submit-overlay'));
+document.getElementById('btn-submit-confirm').addEventListener('click', () => {
+  const btn = document.getElementById('btn-submit-confirm');
+  setLoading(btn, true);
+  setTimeout(() => { setLoading(btn,false); closeOverlay('submit-overlay'); stepTo(6); go('d-submitted',6); toast('Artículo enviado a revisión ✓','ok'); }, 1200);
+});
+
+/* ─ Submitted ─ */
+document.getElementById('btn-go-review').addEventListener('click', () => { populateReview(); go('d-review',7); });
+document.getElementById('btn-back-dash2').addEventListener('click', () => go('d-dashboard',2));
+
+/* ─ Review ─ */
+function populateReview() {
+  document.getElementById('rev-title').textContent = DS.article.title || 'Impacto de los LLMs en la Educación Superior';
+  const body = DS.article.body || BODY.initial;
+  const bodyEl = document.getElementById('rev-body'); bodyEl.innerHTML='';
+  body.split('\n\n').forEach(para => { if(!para.trim()) return; const p=document.createElement('p'); p.textContent=para.trim(); bodyEl.appendChild(p); });
+  const names={apa:'APA 7ª ed.',ieee:'IEEE',vancouver:'Vancouver'};
+  document.getElementById('rev-format-tag').innerHTML = DS.article.format ? `<span class="badge badge-published" style="margin-right:7px">${names[DS.article.format]}</span>` : '';
+}
+
+document.getElementById('btn-approve').addEventListener('click', () => {
+  const btn = document.getElementById('btn-approve'); setLoading(btn,true);
+  setTimeout(() => { setLoading(btn,false); stepTo(8); populatePublished(); go('d-published',8); toast('¡Artículo aprobado y publicado! 🎉','ok'); }, 1400);
+});
+
+document.getElementById('btn-reject-show').addEventListener('click', () => { document.getElementById('reject-area').classList.toggle('show'); });
+document.getElementById('btn-reject-send').addEventListener('click', () => {
+  const comment = document.getElementById('reject-comment').value.trim();
+  if(!comment){ toast('Escribe un motivo de rechazo','warn'); return; }
+  const btn = document.getElementById('btn-reject-send'); setLoading(btn,true);
+  setTimeout(() => {
+    setLoading(btn,false);
+    document.getElementById('dash-reject-msg').textContent = `Rechazado — "${comment.slice(0,55)}…"`;
+    document.getElementById('dash-rejected-row').style.display='flex';
+    document.getElementById('row-draft').style.display='none';
+    toast('Rechazo enviado al autor','warn');
+    go('d-dashboard',2);
+    document.getElementById('reject-comment').value='';
+    document.getElementById('reject-area').classList.remove('show');
+  }, 900);
+});
+
+/* ─ Published ─ */
+function viewPublished({ title, body, fmt, date, isNew }) {
+  const names={apa:'APA 7ª ed.',ieee:'IEEE',vancouver:'Vancouver'};
+  document.getElementById('pub-fmt-meta').textContent = fmt ? names[fmt] : 'Sin formato';
+  const slug = (title||'articulo').toLowerCase().replace(/[^a-záéíóúñü\s]/gi,'').replace(/\s+/g,'-').slice(0,60);
+  document.getElementById('pub-url-text').textContent = `https://platform.local/articulos/${slug}`;
+  document.getElementById('pub-cover-title').textContent = title || '';
+  document.querySelector('#d-published .pub-cover-meta').innerHTML =
+    `Ana Garc\u00eda \u00b7 ${date} \u00b7 <span id="pub-fmt-meta">${fmt ? names[fmt] : 'Sin formato'}</span>`;
+  const pubBody = document.getElementById('pub-body'); pubBody.innerHTML='';
+  body.split('\n\n').forEach((para,i) => {
+    if(!para.trim()) return;
+    if(i===0){ const h2=document.createElement('h2'); h2.textContent='Resumen'; pubBody.appendChild(h2); }
+    const p=document.createElement('p'); p.textContent=para.trim(); pubBody.appendChild(p);
+  });
+  // success bar only for newly published article
+  document.getElementById('pub-success-bar').style.display = isNew ? '' : 'none';
+  document.getElementById('btn-restart').style.display     = isNew ? '' : 'none';
+}
+
+function populatePublished() {
+  viewPublished({
+    title: DS.article.title,
+    body:  DS.article.body || BODY.initial,
+    fmt:   DS.article.format,
+    date:  '1 de mayo de 2026',
+    isNew: true
+  });
+  const row=document.getElementById('row-draft');
+  row.querySelector('.badge').className='badge badge-published';
+  row.querySelector('.badge').textContent='publicado';
+  row.classList.add('disabled');
+}
+
+/* ─ Static published row (Metodologías ágiles) ─ */
+const STATIC_PUBLISHED_BODY = `Las metodologías ágiles han transformado la gestión de proyectos científicos al introducir ciclos iterativos de desarrollo, revisión continua y entrega incremental de resultados.
+
+Scrum y Kanban han sido adoptados en laboratorios universitarios y centros de investigación de toda Europa. Su aplicación reduce los tiempos de entrega de publicaciones y mejora la colaboración entre equipos multidisciplinares.
+
+Los resultados de este estudio muestran una reducción del 34% en los tiempos de entrega de publicaciones cuando se aplican sprints quincenales con revisión entre pares al final de cada iteración (Martínez et al., 2025).
+
+Referencias:
+Martínez, R., et al. (2025). Agile Methodologies in Scientific Research. Journal of Research Management, 7(1), 11–29.
+López, T. & Ruiz, M. (2024). Scrum in Academic Labs. European Science Review, 4(2), 55–72.`;
+
+document.getElementById('row-published-static').addEventListener('click', () => {
+  viewPublished({
+    title: 'Metodologías ágiles en proyectos científicos',
+    body:  STATIC_PUBLISHED_BODY,
+    fmt:   'apa',
+    date:  '15 de abril de 2026',
+    isNew: false
+  });
+  go('d-published', 8);
+});
+document.getElementById('row-published-static').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); document.getElementById('row-published-static').click(); }
+});
+
+document.getElementById('btn-back-dash3').addEventListener('click', () => go('d-dashboard',2));
+document.getElementById('btn-restart').addEventListener('click', () => {
+  DS.article={title:'Impacto de los LLMs en la Educación Superior',body:'',format:null,aiUsed:false};
+  DS.role='author';
+  document.querySelectorAll('.role-btn').forEach(b=>{b.classList.remove('selected');b.setAttribute('aria-pressed','false');});
+  document.querySelector('.role-btn[data-role="author"]').classList.add('selected');
+  document.querySelector('.role-btn[data-role="author"]').setAttribute('aria-pressed','true');
+  document.getElementById('inp-email').value='ana.garcia@universidad.edu';
+  document.getElementById('inp-pass').value='';
+  document.getElementById('ai-chat').innerHTML='<div class="ai-msg bot"><div class="msg-text">Hola, Ana 👋 Estoy listo para ayudarte.</div></div>';
+  document.getElementById('row-draft').querySelector('.badge').className='badge badge-draft';
+  document.getElementById('row-draft').querySelector('.badge').textContent='borrador';
+  document.getElementById('row-draft').classList.remove('disabled');
+  document.getElementById('row-draft').style.display='flex';
+  document.getElementById('dash-rejected-row').style.display='none';
+  document.getElementById('stepper').classList.add('hidden');
+  document.querySelectorAll('.stp').forEach(s=>s.classList.remove('active','done'));
+  // back to presentation
+  backToPresentation(0);
+  toast('Demo reiniciado ↺','info');
+});
+
+
+/* ━━━━ FASE 2 ADDITIONS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* Agent definitions */
+const F2_AGENTS = [
+  { id:'redactor',    icon:'🧠', name:'Agente Redactor',     llm:'llama3.2', desc:'Mejora coherencia y síntesis del contenido', active:true  },
+  { id:'revisor',     icon:'🔍', name:'Agente Revisor',       llm:'llama3.2', desc:'Corrige ortografía, gramática y estilo',     active:true  },
+  { id:'investigador',icon:'🔬', name:'Agente Investigador',  llm:'llama3.2', desc:'Busca referencias en Qdrant + Tavily',       active:true  },
+  { id:'formateador', icon:'📋', name:'Agente Formateador',   llm:'llama3.2', desc:'Aplica APA, IEEE o Vancouver',               active:false },
+  { id:'publicador',  icon:'✨', name:'Agente Publicador',    llm:'llama3.2', desc:'Genera portada, metadatos y publica',        active:true  }
+];
+
+function renderAgentList() {
+  const list = document.getElementById('agent-list');
+  if (!list) return;
+  list.innerHTML = '';
+  F2_AGENTS.forEach(ag => {
+    const row = document.createElement('div');
+    row.className = 'article-row' + (ag.active ? '' : ' disabled');
+    row.style.cursor = 'default';
+    row.innerHTML = `
+      <div style="font-size:1.5rem;flex-shrink:0">${ag.icon}</div>
+      <div style="flex:1">
+        <div class="article-title" style="font-size:.88rem">${ag.name} <span style="font-size:.7rem;color:var(--muted);font-weight:400">— ${ag.llm}</span></div>
+        <div class="article-meta">${ag.desc}</div>
+      </div>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:0">
+        <input type="checkbox" id="ag-toggle-${ag.id}" ${ag.active?'checked':''} aria-label="Activar ${ag.name}"
+          style="width:16px;height:16px;accent-color:var(--green);cursor:pointer;background:transparent;border:none;padding:0"/>
+        <span style="font-size:.75rem;color:${ag.active?'var(--green)':'var(--muted)'}" id="ag-label-${ag.id}">${ag.active?'Activo':'Inactivo'}</span>
+      </label>`;
+    list.appendChild(row);
+    const chk = row.querySelector('input[type=checkbox]');
+    const lbl = row.querySelector(`#ag-label-${ag.id}`);
+    chk.addEventListener('change', () => {
+      ag.active = chk.checked;
+      lbl.textContent = ag.active ? 'Activo' : 'Inactivo';
+      lbl.style.color = ag.active ? 'var(--green)' : 'var(--muted)';
+      row.classList.toggle('disabled', !ag.active);
+    });
+  });
+}
+
+/* Navigate to agents screen */
+document.getElementById('btn-go-rag') && (() => {})(); // keep existing rag nav
+
+function goToAgents() { renderAgentList(); go('d-agents', 3); }
+
+const agentsNavItem = document.querySelector('#d-dashboard .nav-item:nth-child(2)');
+if (agentsNavItem) agentsNavItem.addEventListener('click', goToAgents);
+
+// Override the "Asistente IA" nav item to go to agents builder in fase2
+document.querySelectorAll('#d-dashboard .nav-item').forEach(el => {
+  if (el.textContent.includes('Asistente IA')) {
+    el.addEventListener('click', goToAgents);
+    el.textContent = '🤖 Agentes';
+  }
+});
+
+const agentsBackDash = document.getElementById('agents-back-dash');
+if (agentsBackDash) agentsBackDash.addEventListener('click', () => go('d-dashboard', 2));
+
+const agentGoEditor = document.getElementById('agents-go-editor');
+if (agentGoEditor) agentGoEditor.addEventListener('click', () => {
+  // open editor with the same article
+  document.getElementById('article-body-input').value = BODY.initial;
+  DS.article.body = BODY.initial; DS.article.format = null; DS.article.aiUsed = false;
+  document.getElementById('format-tags').innerHTML = '';
+  document.getElementById('ai-chat').innerHTML = `<div class="ai-msg bot"><div class="msg-text">Hola, Ana 👋 Tengo <strong>${DS.ragSources.length} fuentes</strong> indexadas y el enjambre configurado con <strong>${F2_AGENTS.filter(a=>a.active).length} agentes activos</strong>. Cuando estés lista, pulsa <strong>⚡ Ejecutar enjambre</strong>.</div></div>`;
+  go('d-editor', 4);
+});
+
+/* Agent-nav links in agent builder */
+const agentsNavArticles = document.getElementById('agents-nav-articles');
+if (agentsNavArticles) agentsNavArticles.addEventListener('click', () => go('d-dashboard', 2));
+
+/* Add "Agentes" nav item to d-dashboard sidebar sidebar click */
+const dashAgentsBtn = document.querySelector('#d-dashboard button.nav-item, #d-dashboard .nav-item');
+// Also wire the sidebar nav item that says "🤖 Agentes" or "Asistente IA"
+
+/* ── Swarm Execution ───────────────────────────────────────────── */
+function addSwarmLog(msg, type) {
+  const log = document.getElementById('swarm-log');
+  if (!log) return;
+  const d = document.createElement('div');
+  const t = new Date().toLocaleTimeString();
+  d.style.color = type==='ok'?'var(--green)':type==='warn'?'var(--yellow)':'var(--muted)';
+  d.textContent = `[${t}] ${msg}`;
+  log.appendChild(d);
+  log.scrollTop = log.scrollHeight;
+}
+
+function updateSwarmState(stateObj) {
+  const el = document.getElementById('swarm-state');
+  if (!el) return;
+  el.innerHTML = Object.entries(stateObj).map(([k,v]) =>
+    `<div><span style="color:var(--green)">"${k}"</span>: <span style="color:var(--yellow)">"${String(v).slice(0,60)}"</span></div>`
+  ).join('');
+}
+
+function buildSwarmRows() {
+  const container = document.getElementById('swarm-agent-rows');
+  if (!container) return;
+  container.innerHTML = '';
+  const active = F2_AGENTS.filter(a => a.active && a.id !== 'publicador');
+  active.forEach(ag => {
+    const row = document.createElement('div');
+    row.id = `swarm-row-${ag.id}`;
+    row.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;display:flex;align-items:center;gap:12px';
+    row.innerHTML = `
+      <div style="font-size:1.4rem">${ag.icon}</div>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:.85rem">${ag.name}</div>
+        <div id="swarm-status-${ag.id}" style="font-size:.75rem;color:var(--muted)">Esperando…</div>
+      </div>
+      <div style="width:90px;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden">
+        <div id="swarm-bar-${ag.id}" style="width:0%;height:100%;background:var(--accent);border-radius:3px;transition:width .4s"></div>
+      </div>
+      <span id="swarm-pct-${ag.id}" style="font-size:.72rem;color:var(--muted);min-width:28px;text-align:right">0%</span>`;
+    container.appendChild(row);
+  });
+}
+
+async function runSwarm() {
+  buildSwarmRows();
+  document.getElementById('swarm-log').innerHTML = '';
+  document.getElementById('btn-swarm-next').disabled = true;
+
+  const sharedState = {
+    title: DS.article.title || 'Impacto de los LLMs...',
+    body_words: '1 240',
+    format: 'sin formato',
+    references: '0',
+    status: 'executing'
+  };
+  updateSwarmState(sharedState);
+
+  const active = F2_AGENTS.filter(a => a.active && a.id !== 'publicador');
+  addSwarmLog('🎭 Orquestador iniciado — LangGraph v0.2', 'info');
+  addSwarmLog(`Agentes activos: ${active.map(a=>a.name).join(', ')}`, 'info');
+
+  const agentTasks = {
+    redactor:     { msgs: ['Analizando coherencia…','Reescribiendo párrafo 2…','Mejorando conclusión…'], result: 'Redacción mejorada: +340 palabras', field:'body_words', val:'1 580' },
+    revisor:      { msgs: ['Revisando ortografía…','Detectando errores de puntuación…','Verificando estilo APA…'], result: '4 correcciones aplicadas', field:'format', val:'APA 7ª ✓' },
+    investigador: { msgs: ['Buscando en Qdrant…','Recuperando top-5 chunks…','Añadiendo referencias…'], result: '3 referencias nuevas añadidas', field:'references', val:'8' },
+    formateador:  { msgs: ['Aplicando formato IEEE…','Ordenando bibliografía…'], result: 'Formato IEEE aplicado', field:'format', val:'IEEE ✓' }
+  };
+
+  const promises = active.map(ag => new Promise(resolve => {
+    const task = agentTasks[ag.id];
+    if (!task) { resolve(); return; }
+    const totalMs = 1400 + Math.random() * 800;
+    const steps = task.msgs.length;
+    let step = 0;
+    const iv = setInterval(() => {
+      step++;
+      const pct = Math.round((step / (steps+1)) * 100);
+      const bar = document.getElementById(`swarm-bar-${ag.id}`);
+      const pctEl = document.getElementById(`swarm-pct-${ag.id}`);
+      const statusEl = document.getElementById(`swarm-status-${ag.id}`);
+      if (bar) bar.style.width = pct + '%';
+      if (pctEl) pctEl.textContent = pct + '%';
+      if (pctEl) pctEl.style.color = 'var(--accent2)';
+      if (statusEl && task.msgs[step-1]) statusEl.textContent = task.msgs[step-1];
+      addSwarmLog(`${ag.icon} ${ag.name}: ${task.msgs[step-1]||'finalizando…'}`, 'info');
+
+      if (step >= steps + 1) {
+        clearInterval(iv);
+        if (bar) { bar.style.width='100%'; bar.style.background='var(--green)'; }
+        if (pctEl) { pctEl.textContent='✓'; pctEl.style.color='var(--green)'; }
+        if (statusEl) { statusEl.textContent = task.result; statusEl.style.color='var(--green)'; }
+        const row = document.getElementById(`swarm-row-${ag.id}`);
+        if (row) row.style.borderColor = 'rgba(34,197,94,.4)';
+        sharedState[task.field] = task.val;
+        updateSwarmState(sharedState);
+        addSwarmLog(`✓ ${ag.name} completado: ${task.result}`, 'ok');
+        resolve();
+      }
+    }, totalMs / (steps + 1));
+  }));
+
+  await Promise.all(promises);
+
+  sharedState.status = 'pending_human_review';
+  updateSwarmState(sharedState);
+  addSwarmLog('🎭 Orquestador: todos los agentes completados', 'ok');
+  addSwarmLog('→ Pasando a revisión humana', 'ok');
+
+  // Update article body with improved version
+  const improvedBody = BODY.withAI + '\n\nResultado del enjambre: texto mejorado, 4 correcciones ortográficas, 3 referencias nuevas añadidas desde Qdrant.';
+  document.getElementById('article-body-input').value = improvedBody;
+  DS.article.body = improvedBody;
+
+  document.getElementById('btn-swarm-next').disabled = false;
+  document.getElementById('btn-swarm-next').classList.add('pulse-once');
+  setTimeout(() => document.getElementById('btn-swarm-next').classList.remove('pulse-once'), 1200);
+  toast('⚡ Enjambre completado — listo para revisión humana', 'ok');
+}
+
+/* Swarm screen navigation */
+const btnSwarmBack = document.getElementById('btn-swarm-back');
+if (btnSwarmBack) btnSwarmBack.addEventListener('click', () => go('d-editor', 4));
+
+const btnSwarmNext = document.getElementById('btn-swarm-next');
+if (btnSwarmNext) btnSwarmNext.addEventListener('click', () => { populateReview(); go('d-review', 6); });
+
+/* ── Add ⚡ Ejecutar enjambre button to editor footer ── */
+const editorFooter = document.querySelector('.editor-footer');
+if (editorFooter) {
+  const swarmBtn = document.createElement('button');
+  swarmBtn.className = 'btn btn-green';
+  swarmBtn.id = 'btn-run-swarm';
+  swarmBtn.style.cssText = 'padding:10px 18px;font-size:.88rem;font-weight:700;box-shadow:0 0 16px rgba(34,197,94,.4)';
+  swarmBtn.innerHTML = '⚡ Ejecutar enjambre';
+  swarmBtn.setAttribute('aria-label','Ejecutar enjambre de agentes sobre el artículo');
+  editorFooter.appendChild(swarmBtn);
+  swarmBtn.addEventListener('click', () => {
+    DS.article.body = document.getElementById('article-body-input').value;
+    DS.article.title = document.getElementById('article-title-input').value;
+    go('d-swarm', 5);
+    setTimeout(() => runSwarm(), 400);
+  });
+}
+window.toast = toast;
+</script>
+</body>
+</html>
