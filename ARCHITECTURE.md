@@ -1,18 +1,18 @@
 # Arquitectura Implementada — Fase 1
 
 ## Status
-✅ **Backend** — Arquitectura hexagonal LISTA  
-⏳ **Frontend** — Estructura base lista, código por hacer  
-⏳ **AI Module** — Puertos definidos, implementación en Fase 2  
+**Backend** — Arquitectura hexagonal LISTA  
+**Frontend** — Estructura base lista, código por hacer  
+**AI Module** — Puertos definidos, implementación en Fase 2  
 
 ---
 
-## 🏗️ Estructura completa
+## Estructura completa
 
 ```
 ALEJANDRÍA MAGAZINE
 │
-├─── BACKEND (✅ IMPLEMENTADO)
+├─── BACKEND (IMPLEMENTADO)
 │    │
 │    ├── app/
 │    │   ├── main.py                    FastAPI app factory
@@ -26,7 +26,7 @@ ALEJANDRÍA MAGAZINE
 │    │   │
 │    │   └── modules/
 │    │       │
-│    │       ├── AUTH ✅
+│    │       ├── AUTH 
 │    │       │   ├── domain/entities.py
 │    │       │   ├── application/use_cases.py (Register, Login, GetUser)
 │    │       │   └── adapters/
@@ -34,7 +34,7 @@ ALEJANDRÍA MAGAZINE
 │    │       │       ├── repository.py  (Impl)
 │    │       │       └── http.py        (3 endpoints)
 │    │       │
-│    │       ├── ARTICLES ✅
+│    │       ├── ARTICLES 
 │    │       │   ├── domain/entities.py (Article, ArticleStatus)
 │    │       │   ├── application/use_cases.py (7 use cases)
 │    │       │   └── adapters/
@@ -42,7 +42,7 @@ ALEJANDRÍA MAGAZINE
 │    │       │       ├── repository.py
 │    │       │       └── http.py (6 endpoints)
 │    │       │
-│    │       └── AI 🔜
+│    │       └── AI 
 │    │           ├── domain/ports.py (ILLMProvider, IVectorStore, IWebSearch)
 │    │           ├── application/use_cases.py (Por hacer)
 │    │           └── adapters/ (Por hacer)
@@ -53,7 +53,7 @@ ALEJANDRÍA MAGAZINE
 │    ├── .env.example
 │    └── README.md + EXAMPLES.md
 │
-├─── FRONTEND (⏳ POR HACER)
+├─── FRONTEND (POR HACER)
 │    ├── src/
 │    │   ├── components/
 │    │   │   ├── common/ (Button, Modal, Spinner)
@@ -100,7 +100,7 @@ ALEJANDRÍA MAGAZINE
 
 ---
 
-## 📊 Endpoints implementados
+## Endpoints implementados
 
 ### AUTH (3 endpoints)
 ```
@@ -130,27 +130,27 @@ GET    /health                   → Status del sistema
 
 ```
 1. REGISTRO
-   POST /register → JWT (access + refresh) ✅
+   POST /register → JWT (access + refresh)
 
 2. REDACCIÓN
-   POST /articles → Crea draft ✅
-   PUT /articles/{id} → Edita draft ✅
+   POST /articles → Crea draft
+   PUT /articles/{id} → Edita draft
 
 3. ENVÍO A REVISIÓN
-   POST /articles/{id}/submit → status = in_review ✅
+   POST /articles/{id}/submit → status = in_review
 
 4. REVISIÓN
    GET /articles → Listar artículos en revisión (por hacer)
-   POST /approve → status = published ✅
-   POST /reject → status = draft + comentario ✅
+   POST /approve → status = published
+   POST /reject → status = draft + comentario
 
 5. PUBLICACIÓN (automática al aprobar)
-   GET /articles/{id} → Vista pública ✅
+   GET /articles/{id} → Vista pública
 ```
 
 ---
 
-## ⚙️ Tecnologías
+## Tecnologías
 
 | Capa | Tecnología | Versión |
 |---|---|---|
@@ -164,7 +164,7 @@ GET    /health                   → Status del sistema
 
 ---
 
-## 🎯 Próximas prioridades
+## Próximas prioridades
 
 ### Fase 1 (AHORA)
 - [x] Arquitectura hexagonal base
@@ -184,7 +184,7 @@ GET    /health                   → Status del sistema
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
 # 1. Clonar y entrar
@@ -204,7 +204,7 @@ docker exec ap_backend alembic upgrade head
 
 ---
 
-## 📚 Documentación
+## Documentación
 
 - [Backend README](backend/README.md) — Cómo desarrollar
 - [API Examples](backend/EXAMPLES.md) — Ejemplos curl
@@ -213,7 +213,7 @@ docker exec ap_backend alembic upgrade head
 
 ---
 
-## 🤝 Contribuir
+## Contribuir
 
 La arquitectura es modular y escalable:
 
@@ -227,7 +227,7 @@ Ejemplo: [backend/EXAMPLES.md](backend/EXAMPLES.md#cómo-extender-con-nuevos-mó
 
 ---
 
-## ✨ Principios clave
+## Principios clave
 
 1. **Hexagonal**: Domain ← Application ← Adapters
 2. **Modular**: Cada módulo es independiente

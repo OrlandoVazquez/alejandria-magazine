@@ -1,6 +1,6 @@
 # Guía rápida — Desarrollo local
 
-## ✅ Checklist para empezar
+## Checklist para empezar
 
 ### 1. Clonar y configurar
 - [ ] `git clone https://github.com/luxinopanyvino/alejandria-magazine.git`
@@ -25,11 +25,11 @@
 - [ ] Instalar Docker Desktop
 - [ ] `docker compose up -d`
 - [ ] Esperar a que levanten:
-  - PostgreSQL ✅ (puerto 5432)
-  - Redis ✅ (puerto 6379)
-  - Qdrant ✅ (puerto 6333)
-  - Ollama ✅ (puerto 11434)
-  - MinIO ✅ (puerto 9000, console 9001)
+  - PostgreSQL (puerto 5432)
+  - Redis (puerto 6379)
+  - Qdrant (puerto 6333)
+  - Ollama (puerto 11434)
+  - MinIO (puerto 9000, console 9001)
 
 ### 5. Ejecutar backend
 ```bash
@@ -47,7 +47,7 @@ Debería estar en: http://localhost:3000
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Error: "Connection refused" en PostgreSQL
 ```bash
@@ -91,7 +91,7 @@ uvicorn app.main:app --reload --port 8001
 
 ---
 
-## 📝 Workflow típico
+## Workflow típico
 
 ### Crear nuevo feature
 ```bash
@@ -129,7 +129,7 @@ alembic upgrade head
 
 ---
 
-## 🔍 Verificar que todo funciona
+## Verificar que todo funciona
 
 ```bash
 # Health check
@@ -150,7 +150,7 @@ curl -X POST http://localhost:8000/api/v1/articles \
 
 ---
 
-## 📚 Archivos importantes
+## Archivos importantes
 
 | Archivo | Descripción |
 |---------|-------------|
@@ -162,7 +162,7 @@ curl -X POST http://localhost:8000/api/v1/articles \
 
 ---
 
-## 💡 Tips
+## Tips
 
 - **Tests**: Aún no hay, pero puedes usar curl o Postman para testear endpoints
 - **Logs**: `docker compose logs -f [servicio]` para ver logs en tiempo real
@@ -172,7 +172,7 @@ curl -X POST http://localhost:8000/api/v1/articles \
 
 ---
 
-## 🚨 IMPORTANTE
+## IMPORTANTE
 
 - **NO commitear `.env`** — Usar `.env.example`
 - **NO commitear `__pycache__` o `node_modules`** — Están en `.gitignore`
