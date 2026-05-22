@@ -1,5 +1,9 @@
 name: alejandria-magazine
 
+networks:
+  alexandria_network:
+    driver: bridge
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -13,6 +17,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - alexandria_network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d alejandria"]
       interval: 10s
@@ -28,11 +34,8 @@ services:
       - "6334:6334"
     volumes:
       - qdrant_data:/qdrant/storage
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q -O - http://localhost:6333/healthz > /dev/null 2>&1 || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
+    networks:
+      - alexandria_network
 
   ollama:
     image: ollama/ollama:latest
@@ -42,11 +45,8 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q -O - http://localhost:11434/api/tags > /dev/null 2>&1 || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
+    networks:
+      - alexandria_network
 
   backend:
     build:
@@ -55,28 +55,30 @@ services:
     container_name: alejandria_backend
     restart: unless-stopped
     environment:
-      APP_NAME: Alejandria Magazine
+      APP_NAME: "Alejandria Magazine"
       DEBUG: "true"
-      DATABASE_URL: postgresql+asyncpg://postgres:password@postgres:5432/alejandria
-      SECRET_KEY: local-dev-secret-key
-      ALGORITHM: HS256
-      ACCESS_TOKEN_EXPIRE_MINUTES: 30
-      REFRESH_TOKEN_EXPIRE_DAYS: 7
-      QDRANT_URL: http://qdrant:6333
-      OLLAMA_BASE_URL: http://ollama:11434
-      OLLAMA_MODEL: llama3.2
+      DATABASE_URL: "postgresql+asyncpg://postgres:password@postgres:5432/alejandria"
+      SECRET_KEY: "local-dev-secret-key"
+      ALGORITHM: "HS256"
+      ACCESS_TOKEN_EXPIRE_MINUTES: "30"
+      REFRESH_TOKEN_EXPIRE_DAYS: "7"
+      QDRANT_URL: "http://qdrant:6333"
+      OLLAMA_BASE_URL: "http://ollama:11434"
+      OLLAMA_MODEL: "llama3.2"
     depends_on:
       postgres:
-        condition: service_healthy
+        condition: service_healthy   # Postgres se mantiene estricto porque inicializa rápido
       qdrant:
-        condition: service_healthy
+        condition: service_started   # Cambiado a service_started para evitar el error de Podman
       ollama:
-        condition: service_healthy
+        condition: service_started   # Cambiado a service_started para evitar el error de Podman
     volumes:
       - ./backend:/app
       - ./config.yaml:/app/config.yaml:ro
     ports:
       - "8000:8000"
+    networks:
+      - alexandria_network
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   frontend:
@@ -89,8 +91,13 @@ services:
       - backend
     ports:
       - "8080:80"
+    networks:
+      - alexandria_network
 
 volumes:
   postgres_data:
+    driver: local
   qdrant_data:
+    driver: local
   ollama_data:
+    driver: local

@@ -1,34 +1,26 @@
 app:
   name: "Alejandria Magazine"
   version: "0.1.0"
+  api_prefix: "/api/v1"
   debug: true
 
 security:
-  secret_key: "local-dev-secret-key"
   algorithm: "HS256"
   access_token_expire_minutes: 30
-  refresh_token_expire_days: 7
-
-access_control:
-  enable_dev_role_promotion: true
 
 database:
   url: "postgresql+asyncpg://postgres:password@postgres:5432/alejandria"
 
-redis:
-  url: "redis://:password@redis:6379/0"
-
 qdrant:
   url: "http://qdrant:6333"
-  api_key: null
   collection: "rag_docs"
-  vector_size: 64
+  vector_size: 1536                 # Tamaño estándar de embeddings (nomic-embed-text)
 
 ollama:
   base_url: "http://ollama:11434"
   default_model: "llama3.2"
+  temperature: 0.3
 
-minio:
-  url: "http://minio:9000"
-  root_user: "minioadmin"
-  root_password: "minioadmin"
+editorial_rules:
+  min_approval_score: 80
+  allow_custom_topology: true      # Permite al usuario diseñar su flujo dinámico
