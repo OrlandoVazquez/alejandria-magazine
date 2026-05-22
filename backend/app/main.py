@@ -1,10 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.shared.database import init_db, close_db
-from app.modules.auth.adapters.http import router as auth_router
-from app.modules.articles.adapters.http import router as articles_router
-from app.modules.ai.adapters.http import router as ai_router
+from app.database import init_db, close_db
+from app.routers import auth, articles, ai
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -33,9 +31,19 @@ async def shutdown():
     await close_db()
 
 # Rutas
-app.include_router(auth_router)
-app.include_router(articles_router)
-app.include_router(ai_router)
+app.include_router(auth.router)
+app.include_router(articles.router)
+app.include_router(ai.router)
+
+# Health check
+@app.get("/health")
+async def health_check():
+    """Health check endpoint."""
+    return {"status": "ok", "version": settings.VERSION}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
 
 # Health check
 @app.get("/health")
