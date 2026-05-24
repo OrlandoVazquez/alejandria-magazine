@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import init_db
 # Import models to ensure they are registered on Base.metadata
 from app import models
-from app.routers import auth, articles, ai
+from app.routers import auth, articles, ai, agents
 
 
 @asynccontextmanager
@@ -30,6 +30,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(articles.router)
 app.include_router(ai.router)
+app.include_router(agents.router)
 
 
 @app.get("/health")
