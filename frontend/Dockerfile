@@ -3,14 +3,19 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copiar manifiestos e instalar dependencias
+# Copiar manifiestos e instalar dependencias usando npm ci para mayor estabilidad
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
 # Copiar código fuente y generar la carpeta dist
 COPY . .
-# En un entorno inicial vacío, si da error por falta de código, puedes saltarte el build o crear un index.html básico
-RUN npm run build || mkdir dist
+
+# URL de API para compilar en el frontend (React/Vite)
+ARG VITE_API_URL
+ENV VITE_API_URL=${VITE_API_URL:-http://localhost:8000}
+
+# Compilar
+RUN npm run build
 
 # Etapa 2: Servidor de producción
 FROM nginx:1.25-alpine

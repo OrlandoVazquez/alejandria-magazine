@@ -9,7 +9,7 @@ security:
   access_token_expire_minutes: 30
 
 database:
-  url: "postgresql+asyncpg://postgres:password@postgres:5432/alejandria"
+  url: "postgresql+asyncpg://postgres:password@localhost:5432/alejandria"
 
 qdrant:
   url: "http://qdrant:6333"
