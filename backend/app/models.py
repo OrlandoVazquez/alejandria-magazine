@@ -3,7 +3,7 @@ from datetime import datetime
 from enum import Enum
 from uuid import UUID, uuid4
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy import Column, String, DateTime, Boolean, UUID as SA_UUID, ForeignKey, Text, Enum as SA_Enum, Integer, JSON
 
 from app.database import Base
@@ -106,15 +106,14 @@ class UserLoginDTO(BaseModel):
 
 class UserResponse(BaseModel):
     """User response."""
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     email: str
     full_name: str
     role: UserRole
     is_active: bool
     created_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 class TokenResponse(BaseModel):
@@ -139,6 +138,8 @@ class UpdateArticleDTO(BaseModel):
 
 class ArticleResponse(BaseModel):
     """Article response."""
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     title: str
     body: str
@@ -151,9 +152,6 @@ class ArticleResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     published_at: datetime | None
-
-    class Config:
-        from_attributes = True
 
 
 class ArticleListResponse(BaseModel):
@@ -216,6 +214,8 @@ class AgentRunRequest(BaseModel):
 
 class AgentRunDetailResponse(BaseModel):
     """Detailed response of a single agent run step."""
+    model_config = ConfigDict(from_attributes=True)
+
     run_id: UUID
     agent_name: str
     article_id: UUID | None
@@ -227,9 +227,6 @@ class AgentRunDetailResponse(BaseModel):
     error_message: str | None = None
     started_at: datetime
     finished_at: datetime | None = None
-
-    class Config:
-        from_attributes = True
 
 
 class AgentRunListResponse(BaseModel):

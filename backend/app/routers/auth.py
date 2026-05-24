@@ -89,7 +89,7 @@ async def get_me(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    return UserResponse.from_orm(user)
+    return UserResponse.model_validate(user)
 
 
 @router.post("/dev/promote-reviewer", response_model=UserResponse)
@@ -113,4 +113,4 @@ async def promote_to_reviewer(
     await session.commit()
     await session.refresh(user)
     
-    return UserResponse.from_orm(user)
+    return UserResponse.model_validate(user)

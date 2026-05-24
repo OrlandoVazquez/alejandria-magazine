@@ -1,4 +1,4 @@
-"""Agents router: run and monitor agent orchestrations."""
+﻿"""Agents router: run and monitor agent orchestrations."""
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -96,5 +96,6 @@ async def get_article_agent_runs(
     runs = res_runs.scalars().all()
     
     return AgentRunListResponse(
-        runs=[AgentRunDetailResponse.from_orm(r) for r in runs]
+        runs=[AgentRunDetailResponse.model_validate(r) for r in runs]
     )
+
