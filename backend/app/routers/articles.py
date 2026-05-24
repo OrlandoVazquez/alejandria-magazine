@@ -1,4 +1,4 @@
-"""Articles router: CRUD and workflow for articles."""
+﻿"""Articles router: CRUD and workflow for articles."""
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -39,7 +39,7 @@ async def list_articles(
     total = len(count_result.scalars().all())
     
     return ArticleListResponse(
-        items=[ArticleResponse.from_orm(item) for item in items],
+        items=[ArticleResponse.model_validate(item) for item in items],
         total=total,
         page=skip // limit + 1,
         size=limit,
@@ -63,7 +63,7 @@ async def create_article(
     await session.commit()
     await session.refresh(article)
     
-    return ArticleResponse.from_orm(article)
+    return ArticleResponse.model_validate(article)
 
 
 @router.get("/{article_id}", response_model=ArticleResponse)
@@ -79,7 +79,7 @@ async def get_article(
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
     
-    return ArticleResponse.from_orm(article)
+    return ArticleResponse.model_validate(article)
 
 
 @router.put("/{article_id}", response_model=ArticleResponse)
@@ -111,7 +111,7 @@ async def update_article(
     await session.commit()
     await session.refresh(article)
     
-    return ArticleResponse.from_orm(article)
+    return ArticleResponse.model_validate(article)
 
 
 @router.post("/{article_id}/submit", response_model=ArticleResponse)
@@ -120,7 +120,7 @@ async def submit_for_review(
     token_data=Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
 ):
-    """Submit article for review (draft → in_review)."""
+    """Submit article for review (draft â†’ in_review)."""
     stmt = select(ArticleModel).where(ArticleModel.id == article_id)
     result = await session.execute(stmt)
     article = result.scalars().first()
@@ -139,7 +139,7 @@ async def submit_for_review(
     await session.commit()
     await session.refresh(article)
     
-    return ArticleResponse.from_orm(article)
+    return ArticleResponse.model_validate(article)
 
 
 @router.post("/{article_id}/approve", response_model=ArticleResponse)
@@ -148,7 +148,7 @@ async def approve_article(
     token_data=Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
 ):
-    """Approve article (in_review → approved → published)."""
+    """Approve article (in_review â†’ approved â†’ published)."""
     stmt = select(ArticleModel).where(ArticleModel.id == article_id)
     result = await session.execute(stmt)
     article = result.scalars().first()
@@ -167,7 +167,7 @@ async def approve_article(
     await session.commit()
     await session.refresh(article)
     
-    return ArticleResponse.from_orm(article)
+    return ArticleResponse.model_validate(article)
 
 
 @router.post("/{article_id}/reject", response_model=ArticleResponse)
@@ -177,7 +177,7 @@ async def reject_article(
     token_data=Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
 ):
-    """Reject article (in_review → draft)."""
+    """Reject article (in_review â†’ draft)."""
     stmt = select(ArticleModel).where(ArticleModel.id == article_id)
     result = await session.execute(stmt)
     article = result.scalars().first()
@@ -196,4 +196,5 @@ async def reject_article(
     await session.commit()
     await session.refresh(article)
     
-    return ArticleResponse.from_orm(article)
+    return ArticleResponse.model_validate(article)
+
