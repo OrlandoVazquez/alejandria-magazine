@@ -1,4 +1,4 @@
-﻿"""Articles router: CRUD and workflow for articles."""
+"""Articles router: CRUD and workflow for articles."""
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -7,10 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
     ArticleModel, ArticleStatus, CreateArticleDTO, UpdateArticleDTO,
-    ArticleResponse, ArticleListResponse
+    ArticleResponse, ArticleListResponse, UserModel, NotificationModel
 )
 from app.database import get_session
 from app.routers.auth import get_current_user
+from pydantic import BaseModel
+
 
 router = APIRouter(prefix="/api/v1/articles", tags=["articles"])
 
@@ -197,4 +199,49 @@ async def reject_article(
     await session.refresh(article)
     
     return ArticleResponse.model_validate(article)
+
+
+class AssignReviewerDTO(BaseModel):
+    reviewer_email: str
+
+
+@router.post("/{article_id}/assign-reviewer", response_model=ArticleResponse)
+async def assign_reviewer(
+    article_id: UUID,
+    req: AssignReviewerDTO,
+    token_data=Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """Assign a reviewer to the article and set status to IN_REVIEW."""
+    stmt = select(ArticleModel).where(ArticleModel.id == article_id)
+    res = await session.execute(stmt)
+    article = res.scalars().first()
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+        
+    if str(article.author_id) != token_data["user_id"]:
+        raise HTTPException(status_code=403, detail="Forbidden: Only the author can assign a reviewer")
+        
+    stmt_user = select(UserModel).where(UserModel.email == req.reviewer_email)
+    res_user = await session.execute(stmt_user)
+    reviewer = res_user.scalars().first()
+    if not reviewer:
+        raise HTTPException(status_code=404, detail="Reviewer user not found")
+        
+    article.reviewer_id = reviewer.id
+    article.status = ArticleStatus.IN_REVIEW
+    session.add(article)
+    
+    # Create an in-app notification
+    notification = NotificationModel(
+        user_id=reviewer.id,
+        title="Nueva revisión asignada",
+        message=f"Has sido asignado como revisor para el artículo '{article.title}'."
+    )
+    session.add(notification)
+    
+    await session.commit()
+    await session.refresh(article)
+    return ArticleResponse.model_validate(article)
+
 

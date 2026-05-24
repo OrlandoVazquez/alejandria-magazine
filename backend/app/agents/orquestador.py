@@ -73,6 +73,18 @@ async def log_run_end(run_id: uuid.UUID, output_payload: dict, status: str, erro
     except Exception as e:
         logger.error(f"Error logging run end for run {run_id}: {str(e)}")
 
+# Global registry for active SSE streams: article_id -> list of asyncio.Queue
+import asyncio
+active_streams = {}
+
+def publish_event(article_id: uuid.UUID, event: dict):
+    if article_id in active_streams:
+        for q in active_streams[article_id]:
+            try:
+                q.put_nowait(event)
+            except Exception:
+                pass
+
 # Node Wrapper Factory
 def make_node_wrapper(agent_name: str, run_fn):
     async def wrapper(state: AgentState) -> Dict[str, Any]:
@@ -88,11 +100,31 @@ def make_node_wrapper(agent_name: str, run_fn):
             "loop_count": state.get("loop_count", 0)
         }
         
+        # Emit start event to active streams
+        publish_event(article_id, {"type": "agent_start", "agent": agent_name})
+        publish_event(article_id, {"type": "log", "message": f"Agent {agent_name} started execution."})
+        
         run_id = await log_run_start(agent_name, article_id, author_id, input_data)
         
         try:
             res = await run_fn(state)
             await log_run_end(run_id, res, "completed")
+            
+            # Emit end event with payload
+            draft_text = res.get("draft_text")
+            formatted_text = res.get("formatted_text")
+            end_event = {
+                "type": "agent_end",
+                "agent": agent_name,
+                "output": res
+            }
+            if draft_text:
+                end_event["draft_text"] = draft_text
+            if formatted_text:
+                end_event["formatted_text"] = formatted_text
+                
+            publish_event(article_id, end_event)
+            publish_event(article_id, {"type": "log", "message": f"Agent {agent_name} completed execution."})
             
             # Increment step index
             res["current_step_index"] = state.get("current_step_index", 0) + 1
@@ -100,9 +132,18 @@ def make_node_wrapper(agent_name: str, run_fn):
         except Exception as e:
             logger.error(f"Error executing agent {agent_name}: {str(e)}")
             await log_run_end(run_id, {}, "failed", error_message=str(e))
+            
+            # Emit error event
+            publish_event(article_id, {
+                "type": "agent_error",
+                "agent": agent_name,
+                "error": str(e)
+            })
+            publish_event(article_id, {"type": "log", "message": f"Agent {agent_name} failed: {str(e)}"})
             raise e
             
     return wrapper
+
 
 # Conditional router function after Revisor
 def route_after_revisor(state: AgentState) -> str:
@@ -123,6 +164,7 @@ def route_after_revisor(state: AgentState) -> str:
         
     logger.info("Revisor approved and end of flow reached. Routing to END.")
     return "__end__"
+
 
 class Orchestrator:
     @staticmethod
@@ -168,13 +210,12 @@ class Orchestrator:
                 # Revisor has conditional routing
                 path_map = {
                     "redactor": "redactor",
-                    "investigador": "investigador",
-                    "revisor": "revisor",
-                    "formateador": "formateador",
-                    "publicador": "publicador",
                     "__end__": END
                 }
+                for n in flow_sequence:
+                    path_map[n] = n
                 workflow.add_conditional_edges("revisor", route_after_revisor, path_map)
+
             else:
                 if is_last:
                     # Connect last node directly to END
@@ -214,6 +255,9 @@ class Orchestrator:
         )
         
         logger.info(f"Starting LangGraph run for article {article_id} with sequence {flow_sequence}")
-        final_state = await compiled_graph.ainvoke(initial_state)
-        logger.info(f"Completed LangGraph run for article {article_id}")
-        return final_state
+        try:
+            final_state = await compiled_graph.ainvoke(initial_state)
+            return final_state
+        finally:
+            publish_event(article_id, {"type": "done"})
+            logger.info(f"Completed LangGraph run for article {article_id}")

@@ -232,3 +232,100 @@ class AgentRunDetailResponse(BaseModel):
 class AgentRunListResponse(BaseModel):
     """Response containing a list of agent runs."""
     runs: list[AgentRunDetailResponse]
+
+
+# ============ Saved Flow Models & DTOs ============
+
+class SavedFlowModel(Base):
+    """Saved visual LangGraph pipelines."""
+    __tablename__ = "saved_flows"
+
+    id = Column(SA_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    name = Column(String(255), nullable=False)
+    author_id = Column(SA_UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    nodes = Column(JSON, default=list, nullable=False)
+    edges = Column(JSON, default=list, nullable=False)
+    flow_sequence = Column(JSON, default=list, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
+class CreateSavedFlowDTO(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    nodes: list = Field(default=[])
+    edges: list = Field(default=[])
+    flow_sequence: list[str] = Field(..., min_length=1)
+
+
+class UpdateSavedFlowDTO(BaseModel):
+    name: str | None = None
+    nodes: list | None = None
+    edges: list | None = None
+    flow_sequence: list[str] | None = None
+
+
+class SavedFlowResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    author_id: UUID
+    nodes: list
+    edges: list
+    flow_sequence: list[str]
+    created_at: datetime
+    updated_at: datetime
+
+
+# ============ Flow Checkpoint Models & DTOs ============
+
+class FlowCheckpointModel(Base):
+    """Checkpoints for active or draft agent states."""
+    __tablename__ = "flow_checkpoints"
+
+    id = Column(SA_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    author_id = Column(SA_UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    article_id = Column(SA_UUID(as_uuid=True), ForeignKey("articles.id", ondelete="SET NULL"), nullable=True, index=True)
+    state_json = Column(JSON, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class CreateCheckpointDTO(BaseModel):
+    article_id: UUID | None = None
+    state_json: dict
+
+
+class CheckpointResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    author_id: UUID
+    article_id: UUID | None
+    state_json: dict
+    created_at: datetime
+
+
+# ============ Notification Models & DTOs ============
+
+class NotificationModel(Base):
+    """In-app notifications (e.g. for @mentions)."""
+    __tablename__ = "notifications"
+
+    id = Column(SA_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    user_id = Column(SA_UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    title = Column(String(255), nullable=False)
+    message = Column(Text, nullable=False)
+    read = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class NotificationResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    user_id: UUID
+    title: str
+    message: str
+    read: bool
+    created_at: datetime
+

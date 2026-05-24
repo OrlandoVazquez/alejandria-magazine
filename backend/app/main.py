@@ -5,7 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import init_db
 # Import models to ensure they are registered on Base.metadata
 from app import models
-from app.routers import auth, articles, ai, agents
+from app.routers import auth, articles, ai, agents, flows, config, notifications, checkpoints
+
 
 
 @asynccontextmanager
@@ -31,6 +32,11 @@ app.include_router(auth.router)
 app.include_router(articles.router)
 app.include_router(ai.router)
 app.include_router(agents.router)
+app.include_router(flows.router)
+app.include_router(config.router)
+app.include_router(notifications.router)
+app.include_router(checkpoints.router)
+
 
 
 @app.get("/health")
