@@ -37,7 +37,7 @@ async def register(
     await session.refresh(user)
     
     # Generate token
-    access_token = create_access_token({"user_id": str(user.id), "email": user.email})
+    access_token = create_access_token({"user_id": str(user.id), "email": user.email, "role": user.role.value})
     
     return TokenResponse(access_token=access_token)
 
@@ -55,7 +55,7 @@ async def login(
     if not user or not verify_password(req.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
-    access_token = create_access_token({"user_id": str(user.id), "email": user.email})
+    access_token = create_access_token({"user_id": str(user.id), "email": user.email, "role": user.role.value})
     
     return TokenResponse(access_token=access_token)
 

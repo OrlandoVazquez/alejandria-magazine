@@ -5,9 +5,8 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import Column, String, DateTime, Boolean, UUID as SA_UUID, ForeignKey, Text, Enum as SA_Enum
-from sqlalchemy.orm import declarative_base
 
-Base = declarative_base()
+from app.database import Base
 
 
 # ============ Enums ============

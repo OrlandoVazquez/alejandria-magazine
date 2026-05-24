@@ -125,7 +125,7 @@ async def ingest(req: AIIngestRequest):
         async with httpx.AsyncClient(base_url=settings.QDRANT_URL, timeout=10.0) as client:
             points = [
                 {
-                    "id": str(hash(chunk) % 2**31),
+                    "id": str(uuid4()),
                     "vector": vec,
                     "payload": {
                         "article_id": str(req.article_id),
@@ -137,12 +137,12 @@ async def ingest(req: AIIngestRequest):
             ]
             
             response = await client.put(
-                f"/collections/{settings.QDRANT_COLLECTION}/points",
+                f"/collections/{settings.QDRANT_COLLECTION}/points?wait=true",
                 json={"points": points}
             )
             
             if response.status_code not in (200, 201):
-                raise HTTPException(status_code=502, detail="Could not upsert to Qdrant")
+                raise HTTPException(status_code=502, detail=f"Could not upsert to Qdrant: {response.text}")
     except httpx.RequestError:
         raise HTTPException(status_code=502, detail="Qdrant unavailable")
     
