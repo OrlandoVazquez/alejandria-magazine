@@ -1,0 +1,26 @@
+# dependencies
+node_modules/
+frontend/node_modules/
+
+# vite
+.vite/
+frontend/.vite/
+
+# build
+dist/
+build/
+
+# env
+.env
+.env.*
+
+# logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
