@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Resumen · Análisis de Endpoints — AlexandrIA Magazine</title>
+<style>
+  :root{
+    --bg:#0f172a; --bg2:#1e293b; --ink:#0f172a; --muted:#64748b; --line:#e2e8f0;
+    --card:#ffffff; --soft:#f8fafc;
+    --green:#16a34a; --green-bg:#dcfce7;
+    --amber:#d97706; --amber-bg:#fef3c7;
+    --red:#dc2626; --red-bg:#fee2e2;
+    --blue:#2563eb; --blue-bg:#dbeafe;
+    --violet:#7c3aed; --violet-bg:#ede9fe;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; color:var(--ink); background:var(--soft);
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.55; -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--blue)}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 20px 80px}
+
+  header.hero{
+    background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 60%,#3730a3 100%);
+    color:#fff; padding:48px 0 40px; border-bottom:4px solid #6366f1;
+  }
+  header.hero .wrap{padding-bottom:0}
+  .kicker{letter-spacing:.18em; text-transform:uppercase; font-size:12px; color:#a5b4fc; font-weight:700}
+  header.hero h1{font-size:34px; margin:8px 0 6px; line-height:1.15}
+  header.hero p.sub{margin:0; color:#cbd5e1; font-size:16px; max-width:760px}
+  .meta-row{display:flex; flex-wrap:wrap; gap:10px; margin-top:18px}
+  .chip{background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.18);
+        color:#e2e8f0; padding:5px 12px; border-radius:999px; font-size:13px}
+
+  section{margin-top:38px}
+  h2{font-size:22px; margin:0 0 14px; display:flex; align-items:center; gap:10px}
+  h2 .n{display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px;
+        background:var(--ink); color:#fff; border-radius:8px; font-size:14px; font-weight:700}
+  h3{font-size:16px; margin:22px 0 8px}
+  p.lead{font-size:16px; color:#334155}
+
+  .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px}
+  .stat{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px 16px;
+        box-shadow:0 1px 2px rgba(15,23,42,.04)}
+  .stat .big{font-size:30px; font-weight:800; line-height:1; color:var(--ink)}
+  .stat .lbl{font-size:13px; color:var(--muted); margin-top:6px}
+  .stat.green .big{color:var(--green)} .stat.amber .big{color:var(--amber)}
+  .stat.red .big{color:var(--red)} .stat.blue .big{color:var(--blue)} .stat.violet .big{color:var(--violet)}
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px 22px;
+        box-shadow:0 1px 2px rgba(15,23,42,.04)}
+
+  .badge{display:inline-block; padding:2px 9px; border-radius:999px; font-size:12px; font-weight:700; white-space:nowrap}
+  .b-existe{background:var(--green-bg); color:var(--green)}
+  .b-parcial{background:var(--amber-bg); color:var(--amber)}
+  .b-falta{background:var(--red-bg); color:var(--red)}
+  .b-alta{background:var(--red-bg); color:var(--red)}
+  .b-media{background:var(--amber-bg); color:var(--amber)}
+  .b-baja{background:#e2e8f0; color:#475569}
+  .b-p0{background:#111827; color:#fff}
+  .b-p1{background:var(--blue-bg); color:var(--blue)}
+  .b-p2{background:var(--violet-bg); color:var(--violet)}
+
+  table{width:100%; border-collapse:collapse; font-size:14px; background:var(--card);
+        border:1px solid var(--line); border-radius:12px; overflow:hidden}
+  th,td{text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top}
+  th{background:#f1f5f9; font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; color:#475569}
+  tr:last-child td{border-bottom:none}
+  code{font-family:"Cascadia Code",Consolas,"SF Mono",Menlo,monospace; font-size:12.5px;
+       background:#f1f5f9; padding:1px 6px; border-radius:6px; color:#0f172a; white-space:nowrap}
+  .mono-wrap code{white-space:normal}
+
+  .sev{border-left:4px solid; border-radius:10px; padding:12px 16px; margin:10px 0; background:var(--card); border:1px solid var(--line)}
+  .sev.crit{border-left-color:var(--red)}
+  .sev.warn{border-left-color:var(--amber)}
+  .sev h4{margin:0 0 4px; font-size:15px}
+  .sev p{margin:0; font-size:14px; color:#475569}
+
+  .sm{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+  .sm .panel{background:#0f172a; color:#e2e8f0; border-radius:12px; padding:16px 18px; font-family:"Cascadia Code",Consolas,monospace; font-size:13px; overflow:auto}
+  .sm .panel.bad{background:#3f1d1d}
+  .sm .panel h4{margin:0 0 10px; color:#fff; font-family:"Segoe UI",system-ui,sans-serif; font-size:14px; display:flex; align-items:center; gap:8px}
+  .flow{white-space:pre; line-height:1.7}
+  .ok{color:#86efac} .ko{color:#fca5a5}
+
+  .two{display:grid; grid-template-columns:1fr 1fr; gap:18px}
+  ul.tidy{margin:6px 0 0; padding-left:20px} ul.tidy li{margin:4px 0}
+  .note{font-size:13px; color:var(--muted)}
+  footer{margin-top:46px; padding-top:20px; border-top:1px solid var(--line); color:var(--muted); font-size:13px}
+
+  @media (max-width:720px){
+    .sm,.two{grid-template-columns:1fr}
+    header.hero h1{font-size:27px}
+    .hide-sm{display:none}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker">Documento técnico · Backend API</div>
+    <h1>Análisis de Endpoints del Backend</h1>
+    <p class="sub">AlexandrIA Magazine — inventario de la superficie HTTP existente, discrepancias frontend↔backend y diseño de la API recomendada por dominio.</p>
+    <div class="meta-row">
+      <span class="chip">📅 2026-06-01</span>
+      <span class="chip">🌿 rama base: develop</span>
+      <span class="chip">⚙️ FastAPI · React · LangGraph</span>
+      <span class="chip">📄 Resumen visual del informe completo</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- 1. Resumen -->
+  <section>
+    <h2><span class="n">1</span> Resumen ejecutivo</h2>
+    <p class="lead">
+      El backend está en un estado de <strong>refactor a medio terminar con deuda de seguridad grave</strong>.
+      Hoy hay <strong>33 endpoints de dominio cableados</strong> (más <code>/health</code>) en 8 routers, pero existe
+      en paralelo un árbol hexagonal completo en <code>app/modules/*</code> que <strong>nadie cablea</strong> (código muerto)
+      y que duplica <code>auth</code>/<code>articles</code>/<code>ai</code>. La superficie viva contiene
+      <strong>fallos de control de acceso explotables</strong>, <strong>viola la máquina de estados declarada</strong>
+      y arrastra <strong>3 contratos rotos</strong> con el frontend. Este resumen propone una superficie de
+      <strong>60+ endpoints en 15 dominios</strong> marcando lo que <em>existe</em>, lo <em>parcial</em> y lo que <em>falta</em>,
+      con prioridades para cerrar primero la seguridad y alinear el flujo editorial.
+    </p>
+
+    <div class="cards" style="margin-top:18px">
+      <div class="stat"><div class="big">33</div><div class="lbl">endpoints cableados (+ <code>/health</code>)</div></div>
+      <div class="stat blue"><div class="big">8</div><div class="lbl">routers vivos</div></div>
+      <div class="stat violet"><div class="big">15</div><div class="lbl">dominios propuestos</div></div>
+      <div class="stat green"><div class="big">60+</div><div class="lbl">endpoints en el diseño</div></div>
+      <div class="stat red"><div class="big">6</div><div class="lbl">brechas de seguridad P0</div></div>
+      <div class="stat amber"><div class="big">3</div><div class="lbl">discrepancias FE↔BE</div></div>
+    </div>
+  </section>
+
+  <!-- 2. Seguridad -->
+  <section>
+    <h2><span class="n">2</span> Hallazgos de seguridad (P0)</h2>
+    <div class="sev crit">
+      <h4>🔴 Router IA 100% público — <code>/api/v1/ai/models · /assist · /ingest · /format</code></h4>
+      <p>Ningún <code>Depends</code>: abuso ilimitado del LLM y <strong>envenenamiento del RAG</strong> (Qdrant) por cualquier anónimo, para cualquier <code>article_id</code>.</p>
+    </div>
+    <div class="sev crit">
+      <h4>🔴 <code>GET /api/v1/articles/{id}</code> sin auth ni ownership</h4>
+      <p>Cualquier anónimo lee borradores / <code>in_review</code> / <code>rejected</code> ajenos conociendo el UUID.</p>
+    </div>
+    <div class="sev crit">
+      <h4>🔴 <code>PUT /api/v1/agents/claude-defs/{name}</code> — path traversal + tampering de prompts</h4>
+      <p><code>name</code> sin sanear se interpola en la ruta del fichero; permite escribir fuera del directorio y reescribir los prompts del pipeline. Sin gate de admin.</p>
+    </div>
+    <div class="sev crit">
+      <h4>🔴 <code>GET/PUT /api/v1/config</code> sin gate de admin</h4>
+      <p>Cualquier usuario logueado lee la config global (incluido <code>SECRET_KEY</code>) y la sobreescribe con un dict arbitrario replicado a varias rutas.</p>
+    </div>
+    <div class="sev crit">
+      <h4>🔴 <code>approve</code> / <code>reject</code> / <code>assign-reviewer</code> sin rol ni ownership</h4>
+      <p>Solo exigen estar logueado: cualquier autor publica o rechaza artículos de otros. El RBAC (<code>author/reviewer/admin</code>) es puramente declarativo.</p>
+    </div>
+    <div class="sev warn">
+      <h4>🟠 CORS y secretos</h4>
+      <p><code>allow_origins=['*']</code> junto a <code>allow_credentials=True</code> (combinación inválida por spec) y <code>SECRET_KEY</code> con default hardcodeado.</p>
+    </div>
+  </section>
+
+  <!-- 3. Maquina de estados -->
+  <section>
+    <h2><span class="n">3</span> Máquina de estados: declarado vs. real</h2>
+    <div class="sm">
+      <div class="panel">
+        <h4>✅ Declarado (state-machine.md · DESIGN §2.3)</h4>
+        <div class="flow"><span class="ok">draft</span> ──submit──▶ <span class="ok">in_review</span> ──approve──▶ <span class="ok">approved</span> ──publish──▶ <span class="ok">published</span>
+  ▲                  │
+  └──── reject ──────┘  (vuelve a draft)
+
+publish = automático <b>tras</b> approve humano (ADR-004)</div>
+      </div>
+      <div class="panel bad">
+        <h4>❌ Real (código actual)</h4>
+        <div class="flow"><span class="ko">draft</span> ──submit──▶ <span class="ko">in_review</span> ──approve──▶ <b>PUBLISHED</b>
+                     │                (¡salta 'approved'!)
+                     └──reject──▶ <span class="ko">rejected</span>  ✗ sin salida
+
+approved: NUNCA usado
+publish : SIN endpoint — lo hace el agente
+          publicador escribiendo la BD (viola ADR-004)</div>
+      </div>
+    </div>
+    <p class="note" style="margin-top:12px">
+      <strong>Consecuencia:</strong> el estado <code>approved</code> nunca se materializa, un artículo <code>rejected</code> queda en callejón sin salida,
+      y la publicación ocurre <em>sin</em> el gate humano que exige el ADR-004.
+    </p>
+  </section>
+
+  <!-- 4. Discrepancias FE-BE -->
+  <section>
+    <h2><span class="n">4</span> Discrepancias frontend ↔ backend</h2>
+    <table>
+      <thead><tr><th>Llamada del frontend</th><th>Backend</th><th>Estado</th><th>Problema</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>reject</code> envía <code>{comment}</code> en el <strong>body</strong></td>
+          <td>lee <code>comment</code> como <strong>query param</strong></td>
+          <td><span class="badge b-falta">Roto</span></td>
+          <td>El comentario de rechazo nunca llega al backend.</td>
+        </tr>
+        <tr>
+          <td><code>POST /notifications/read-all</code></td>
+          <td><strong>no existe</strong></td>
+          <td><span class="badge b-falta">404</span></td>
+          <td>Ruta inexistente; 404 garantizado al usarse.</td>
+        </tr>
+        <tr>
+          <td><code>assign-reviewer</code> con email manual</td>
+          <td>no valida rol del destinatario</td>
+          <td><span class="badge b-parcial">Semántica rota</span></td>
+          <td>Se puede asignar como revisor a cualquier usuario; falta <code>GET /users/reviewers</code>.</td>
+        </tr>
+        <tr>
+          <td><code>articlesApi.get</code> (autenticado)</td>
+          <td><code>GET /articles/{id}</code> público</td>
+          <td><span class="badge b-falta">Seguridad</span></td>
+          <td>El frontend espera recurso protegido; el backend lo sirve abierto.</td>
+        </tr>
+        <tr>
+          <td>sin manejo de expiración de sesión</td>
+          <td><code>POST /auth/refresh</code> ausente</td>
+          <td><span class="badge b-falta">Falta en ambos</span></td>
+          <td>Las primitivas existen, pero no hay endpoint ni <code>refresh_token</code> emitido → la sesión se cae.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 5. Inventario por router -->
+  <section>
+    <h2><span class="n">5</span> Inventario actual por router</h2>
+    <table>
+      <thead><tr><th>Router</th><th>Endpoints</th><th class="hide-sm">Auth</th><th>Estado general</th></tr></thead>
+      <tbody>
+        <tr><td><code>auth</code></td><td>register · login · me · dev/promote-reviewer</td><td class="hide-sm">Mixto</td><td><span class="badge b-parcial">Parcial</span> sin refresh; promote-reviewer ON por defecto</td></tr>
+        <tr><td><code>articles</code></td><td>list · create · get · update · submit · approve · reject · assign-reviewer</td><td class="hide-sm">Mixto</td><td><span class="badge b-parcial">Parcial</span> ownership/rol/estado</td></tr>
+        <tr><td><code>ai</code></td><td>models · assist · ingest · format</td><td class="hide-sm"><span class="badge b-falta">Ninguna</span></td><td><span class="badge b-falta">Inseguro</span> todo público</td></tr>
+        <tr><td><code>agents</code></td><td>definitions · claude-defs · claude-defs/{name} · run · runs · stream(SSE)</td><td class="hide-sm">Mixto</td><td><span class="badge b-parcial">Parcial</span> path traversal en claude-defs</td></tr>
+        <tr><td><code>flows</code></td><td>list · create · get · update · delete</td><td class="hide-sm">Bearer</td><td><span class="badge b-existe">Correcto</span> patrón de ownership a replicar</td></tr>
+        <tr><td><code>config</code></td><td>get · put</td><td class="hide-sm">Solo login</td><td><span class="badge b-parcial">Parcial</span> falta gate admin</td></tr>
+        <tr><td><code>notifications</code></td><td>list · {id}/read</td><td class="hide-sm">Bearer</td><td><span class="badge b-parcial">Parcial</span> falta read-all / count</td></tr>
+        <tr><td><code>checkpoints</code></td><td>create · latest</td><td class="hide-sm">Bearer</td><td><span class="badge b-parcial">Parcial</span> sin validar ownership de article_id</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 6. Superficie propuesta destacada -->
+  <section>
+    <h2><span class="n">6</span> Endpoints prioritarios propuestos</h2>
+    <p class="note">Selección de prioridad <strong>Alta</strong> sobre los 60+ del informe completo. Leyenda:
+      <span class="badge b-existe">Existe</span> <span class="badge b-parcial">Parcial</span> <span class="badge b-falta">Falta</span>.
+    </p>
+    <table>
+      <thead><tr><th>Método · Ruta</th><th>Estado</th><th>Auth/Rol</th><th>Propósito</th></tr></thead>
+      <tbody>
+        <tr><td class="mono-wrap"><code>POST /api/v1/auth/refresh</code></td><td><span class="badge b-falta">Falta</span></td><td>Refresh token</td><td>Rotar token; evitar que la sesión se caiga.</td></tr>
+        <tr><td class="mono-wrap"><code>GET /api/v1/users/reviewers</code></td><td><span class="badge b-falta">Falta</span></td><td>autenticado</td><td>Selector de revisores para asignación.</td></tr>
+        <tr><td class="mono-wrap"><code>PUT /api/v1/users/{id}/role</code></td><td><span class="badge b-falta">Falta</span></td><td>admin</td><td>Raíz del RBAC: asignar reviewer/admin.</td></tr>
+        <tr><td class="mono-wrap"><code>GET /api/v1/articles/{id}</code></td><td><span class="badge b-parcial">Parcial</span></td><td>owner / reviewer asignado</td><td>Cerrar acceso: scopear como <code>flows</code>.</td></tr>
+        <tr><td class="mono-wrap"><code>POST /api/v1/articles/{id}/publish</code></td><td><span class="badge b-falta">Falta</span></td><td>reviewer/admin</td><td><code>approved → published</code> con gate humano.</td></tr>
+        <tr><td class="mono-wrap"><code>GET /api/v1/reviews/queue</code></td><td><span class="badge b-falta">Falta</span></td><td>reviewer/admin</td><td>Cola de revisión (hoy el reviewer no ve nada ajeno).</td></tr>
+        <tr><td class="mono-wrap"><code>GET /api/v1/agents/{id}/runs/{run_id}</code></td><td><span class="badge b-falta">Falta</span></td><td>owner</td><td>Resolver el estado/resultado de un run.</td></tr>
+        <tr><td class="mono-wrap"><code>GET /api/v1/feed</code> · <code>GET /api/v1/articles/{id}/view</code></td><td><span class="badge b-falta">Falta</span></td><td>Pública</td><td>Cara pública (solo <code>published</code>); reemplaza el uso inseguro de <code>GET /articles/{id}</code>.</td></tr>
+        <tr><td class="mono-wrap"><code>POST /api/v1/notifications/read-all</code></td><td><span class="badge b-falta">Falta</span></td><td>autenticado</td><td>Corrige el 404 que llama el frontend.</td></tr>
+        <tr><td class="mono-wrap"><code>* /api/v1/ai/*</code> (cerrar auth)</td><td><span class="badge b-parcial">Parcial</span></td><td>Bearer + ownership</td><td>Añadir auth, ownership de <code>article_id</code> y rate-limit.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 7. Roadmap -->
+  <section>
+    <h2><span class="n">7</span> Roadmap por fases</h2>
+    <div class="two">
+      <div class="card">
+        <h3><span class="badge b-p0">P0</span>&nbsp; Seguridad &amp; RBAC base</h3>
+        <ul class="tidy">
+          <li>Cerrar auth en todo <code>/ai/*</code> + rate-limit.</li>
+          <li>Ownership en <code>GET /articles/{id}</code>.</li>
+          <li>Sanear <code>name</code> + gate admin en <code>claude-defs</code>.</li>
+          <li>Admin + schema + redacción de secretos en <code>/config</code>.</li>
+          <li>Gate de rol en approve/reject/assign/publish.</li>
+          <li>Endurecer CORS y <code>SECRET_KEY</code>.</li>
+          <li><code>PUT /users/{id}/role</code> · <code>GET /users/reviewers</code>; helpers <code>require_role</code>.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3><span class="badge b-p1">P1</span>&nbsp; Coherencia funcional</h3>
+        <ul class="tidy">
+          <li>Alinear máquina de estados: <code>approve→approved</code>, <code>POST /publish</code>, resubmit.</li>
+          <li>El agente publicador deja de publicar directo (ADR-004).</li>
+          <li><code>GET /reviews/queue</code> (cola del revisor).</li>
+          <li><code>POST /auth/refresh</code> + emitir <code>refresh_token</code>.</li>
+          <li><code>reject</code> lee <code>comment</code> del body; <code>read-all</code> + <code>unread-count</code>.</li>
+          <li><code>GET /agents/{id}/runs/{run_id}</code>.</li>
+          <li>Feed público: <code>/feed</code> + <code>/articles/{id}/view</code>.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3><span class="badge b-p2">P2</span>&nbsp; Completitud &amp; observabilidad</h3>
+        <ul class="tidy">
+          <li>CRUD de usuarios; <code>DELETE /articles/{id}</code>.</li>
+          <li>Subida de portada (<code>cover_url</code> → MinIO).</li>
+          <li><code>/dashboard/stats</code> y <code>/metrics/agents</code> (poblar <code>tokens_used</code>).</li>
+          <li>Paginación SQL real; <code>response_model</code> en todos.</li>
+          <li>SSE sobre Redis (multi-worker); búsqueda con <code>q</code>.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>🧭 Recomendación de arquitectura</h3>
+        <ul class="tidy">
+          <li><strong>Unificar</strong> routers vs. módulos hexagonales: una sola implementación.</li>
+          <li>Introducir capa de <em>casos de uso</em> (regla <code>fastapi-style.md</code>).</li>
+          <li>Centralizar las transiciones de estado en el dominio.</li>
+          <li>Unificar config: <code>vector_size</code> 1536 (yaml) vs. 64 (fallback).</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>📄 Informe completo: <code>docs/analisys/analisis-endpoints-backend.md</code> (470 líneas, 11 secciones, tablas por dominio y anexo de convenciones).</p>
+    <p>Metodología: inventario multi-agente (routers · módulos · dominio/IA · consumo y features del frontend · docs de producto) con verificación adversarial contra el código real.</p>
+    <p class="note">Documento de análisis — no introduce cambios de código. Generado para revisión de la comisión técnica.</p>
+  </footer>
+
+</div>
+</body>
+</html>
